@@ -1,0 +1,5 @@
+# Not track the .mp4 file (video)
+*.mp4
+
+# Not track the temp file
+*~
