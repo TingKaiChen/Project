@@ -1,4 +1,4 @@
-function [TR, TT, ER, t, count] = icp(q,p,varargin)
+function [TR, TT, ER, dist_l, dist_s, t, count] = icp(q,p,varargin)
 % Perform the Iterative Closest Point algorithm on three dimensional point
 % clouds.
 %
@@ -123,7 +123,7 @@ inp.addParamValue('Verbose', false, @(x)islogical(x));
 
 inp.addParamValue('Weight', @(x)ones(1,length(x)), @(x)isa(x,'function_handle'));
 
-inp.addParamValue('WorstRejection', 0, @(x)isscalar(x) && x > 0 && x < 1);
+inp.addParamValue('WorstRejection', 0, @(x)isscalar(x) && x > 0 && x < 2);
 
 inp.parse(q,p,varargin{:});
 arg = inp.Results;
@@ -189,6 +189,8 @@ end
 t(1) = toc;
 
 % Go into main iteration loop
+dist_l = [];    % Store the sorted distance of every match pairs
+dist_s = [];
 count = 0;
 for k=1:arg.iter
        
@@ -209,17 +211,24 @@ for k=1:arg.iter
         mindist = mindist(p_idx);
     else
         p_idx = true(1, Np);
+        invp_idx = false(1, Np);
         q_idx = match;
     end
     
     % If worst matches should be rejected
     if arg.WorstRejection
-        edge = round((1-arg.WorstRejection)*sum(p_idx));
+        % edge = round((1-arg.WorstRejection)*sum(p_idx));
         pairs = find(p_idx);
-        [~, idx] = sort(mindist);
-        p_idx(pairs(idx(edge:end))) = false;
+        % [~, idx] = sort(mindist);
+        % p_idx(pairs(idx(edge:end))) = false;
+        % invp_idx(pairs(idx(edge:end))) = true;
+        p_idx(pairs(mindist>arg.WorstRejection)) = false;
+        invp_idx(pairs(mindist>arg.WorstRejection)) = true;
         q_idx = match(p_idx);
+        maxdist = mindist(invp_idx);
         mindist = mindist(p_idx);
+        dist_l = [dist_l size(maxdist,1)];
+        dist_s = [dist_s size(mindist,1)];
     end
     
     if k == 1
