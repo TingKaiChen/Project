@@ -1,7 +1,8 @@
 clc
 cd ~/Dropbox/study/Project/TrajonMap
-A = imread('../Real_Map/gismap.png');
+A = imread('../Real_Map/utmMap.png');
 image([0,size(A,2)/10],[0,size(A,1)/10],flip(A,1))
+truesize
 set(gca,'ydir','normal');
 axis equal
 
@@ -40,22 +41,13 @@ yd2 = [y3,y4];
 x = [x1,x2,x3,x4];
 y = [y1,y2,y3,y4];
 
-
-% Video
-% outputV = VideoWriter('v2', 'MPEG-4');
-% open(outputV)
-
-% figure('Name','Trajectory','Position',[100 100 1400 900])
-
-
-% writeVideo(outputV,getframe(gcf))
 step = 5;
 dr = 1.0;
 
 % Initial pose
-rot = eul2rotm([deg2rad(-45),0,0]);
+rot = eul2rotm([deg2rad(0),0,0]);
 rot = rot(1:2,1:2);
-traj = [35;65];
+traj = [35;46.5];
 rotd1 = rot;
 trajd1 = traj;
 rotd2 = rot;
@@ -64,14 +56,7 @@ rotd1MF = rot;
 trajd1MF = traj;
 rotd2MF = rot;
 trajd2MF = traj;
-% rot1 = rot;
-% traj1 = traj;
-% rot2 = rot;
-% traj2 = traj;
-% rot3 = rot;
-% traj3 = traj;
-% rot4 = rot;
-% traj4 = traj;
+
 preframe = 1;
 d1_b = deg1(preframe,:);
 d2_b = deg2(preframe,:);
@@ -296,40 +281,19 @@ for frame=1+step:step:(m/16)
     afd2 = [xd2_a;yd2_a;zeros(size(xd2_a))];
     afd1MF = [ux1_a;uy1_a;zeros(size(ux1_a))];
     afd2MF = [ux3_a;uy3_a;zeros(size(ux3_a))];
-    % af1 = [x1_a;y1_a;zeros(size(x1_a))];
-    % bf1 = [x1_b;y1_b;zeros(size(x1_b))];
-    % af2 = [x2_a;y2_a;zeros(size(x2_a))];
-    % bf2 = [x2_b;y2_b;zeros(size(x2_b))];
-    % af3 = [x3_a;y3_a;zeros(size(x3_a))];
-    % bf3 = [x3_b;y3_b;zeros(size(x3_b))];
-    % af4 = [x4_a;y4_a;zeros(size(x4_a))];
-    % bf4 = [x4_b;y4_b;zeros(size(x4_b))];
     [TR,TT,ER,dist_l,dist_s] = icp(af, bf, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
     [TRd1,TTd1,ERd1,distd1_l,distd1_s] = icp(afd1, bfd1, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
     [TRd2,TTd2,ERd2,distd2_l] = icp(afd2, bfd2, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
-    % [TRd1MF,TTd1MF,~] = icp(afd1MF,bfd1MF,iter,'Matching', 'kDtree', 'WorstRejection', dr);
-    % [TRd2MF,TTd2MF,~] = icp(afd2MF,bfd2MF,iter,'Matching', 'kDtree', 'WorstRejection', dr);
-    % [TR1, TT1, ER1] = icp(af1, bf1, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
-    % [TR2, TT2, ER2] = icp(af2, bf2, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
-    % [TR3, TT3, ER3] = icp(af3, bf3, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
-    % [TR4, TT4, ER4] = icp(af4, bf4, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
     
     rjNum = [rjNum dist_l];
     rjNumd1 = [rjNumd1 distd1_l];
     rjNumd2 = [rjNumd2 distd2_l];
-
-    % dt1(it) = norm(TTd1MF);
-    % dt2(it) = norm(TTd2MF);
-    % ptnumratio1(it) = size(afd1MF, 2)/size(afd1, 2);
-    % ptnumratio2(it) = size(afd2MF, 2)/size(afd2, 2);
 
     it = it+1;
     preframe = frame;
     bf = af;
     bfd1 = afd1;
     bfd2 = afd2;
-    % bfd1MF = afd1MF;
-    % bfd2MF = afd2MF;
 
     % Trajectory
     rot = TR(1:2,1:2)'*rot;
@@ -338,67 +302,37 @@ for frame=1+step:step:(m/16)
     trajd1 = trajd1-rotd1*TTd1(1:2,1);
     rotd2 = TRd2(1:2,1:2)'*rotd2;
     trajd2 = trajd2-rotd2*TTd2(1:2,1);
-    % rotd1MF = TRd1MF(1:2,1:2)'*rotd1MF;
-    % trajd1MF = trajd1MF-rotd1MF*TTd1MF(1:2,1);
-    % rotd2MF = TRd2MF(1:2,1:2)'*rotd2MF;
-    % trajd2MF = trajd2MF-rotd2MF*TTd2MF(1:2,1);
-    % rot1 = TR1(1:2,1:2)'*rot1;
-    % traj1 = traj1-rot1*TT1(1:2,1);
-    % rot2 = TR2(1:2,1:2)'*rot2;
-    % traj2 = traj2-rot2*TT2(1:2,1);
-    % rot3 = TR3(1:2,1:2)'*rot3;
-    % traj3 = traj3-rot3*TT3(1:2,1);
-    % rot4 = TR4(1:2,1:2)'*rot4;
-    % traj4 = traj4-rot4*TT4(1:2,1);
-    scatter(traj(1),traj(2),'filled','MarkerFaceColor','k');
-    redTraj = scatter(traj(1),traj(2),'filled','MarkerFaceColor','r');
+    vb = 'on';     % Visibility of trajectory All
+    vbd1 = 'off';     % Visibility of trajectory L1+L2
+    vbd2 = 'off';     % Visibility of trajectory L3+L4
+    s1=scatter(traj(1),traj(2),'filled');
+    redTraj = scatter(traj(1),traj(2),'filled');
     hold on
-    scatter(trajd1(1),trajd1(2),'filled','MarkerFaceColor','m');
-    redTrajd1 = scatter(trajd1(1),trajd1(2),'filled','MarkerFaceColor','r');
+    s2=scatter(trajd1(1),trajd1(2),'filled');
+    redTrajd1 = scatter(trajd1(1),trajd1(2),'filled');
     hold on
-    scatter(trajd2(1),trajd2(2),'filled','MarkerFaceColor','c');
-    redTrajd2 = scatter(trajd2(1),trajd2(2),'filled','MarkerFaceColor','r');
+    s3=scatter(trajd2(1),trajd2(2),'filled');
+    redTrajd2 = scatter(trajd2(1),trajd2(2),'filled');
     hold on
-    % scatter(trajd1MF(1),trajd1MF(2),'filled','MarkerFaceColor','r');
-    % redTrajd1MF = scatter(trajd1MF(1),trajd1MF(2),'filled','MarkerFaceColor','k');
-    % hold on
-    % scatter(trajd2MF(1),trajd2MF(2),'filled','MarkerFaceColor','b');
-    % redTrajd2MF = scatter(trajd2MF(1),trajd2MF(2),'filled','MarkerFaceColor','k');
-    % scatter(traj1(1),traj1(2),'filled','MarkerFaceColor','r');
-    % redTraj1 = scatter(traj1(1),traj1(2),'filled','MarkerFaceColor','k');
-    % hold on
-    % scatter(traj2(1),traj2(2),'filled','MarkerFaceColor','y');
-    % redTraj2 = scatter(traj2(1),traj2(2),'filled','MarkerFaceColor','k');
-    % hold on
-    % scatter(traj3(1),traj3(2),'filled','MarkerFaceColor','g');
-    % redTraj3 = scatter(traj3(1),traj3(2),'filled','MarkerFaceColor','k');
-    % hold on
-    % scatter(traj4(1),traj4(2),'filled','MarkerFaceColor','b');
-    % redTraj4 = scatter(traj4(1),traj4(2),'filled','MarkerFaceColor','k');
-    % hold on
     axis equal
     xlim([0 size(A,2)/10])
     ylim([0 size(A,1)/10]) 
 
-%     text(0.3, 0.2, num2str(ER(iter+1), '%.1f'), 'FontSize', 18);
-%         text(0.3, 0.2, num2str(norm(TT(1:2,1)), '%.3f'), 'FontSize', 18);
+    set(s1, 'SizeData', 5,'MarkerFaceColor','k','Visible',vb)
+    set(s2, 'SizeData', 5,'MarkerFaceColor','m','Visible',vbd1)
+    set(s3, 'SizeData', 5,'MarkerFaceColor','c','Visible',vbd2)
+    set(redTraj,'SizeData', 5,'MarkerFaceColor','r','Visible',vb)
+    set(redTrajd1, 'SizeData', 0.5,'MarkerFaceColor','r','Visible',vbd1)
+    set(redTrajd2, 'SizeData', 0.5,'MarkerFaceColor','r','Visible',vbd2)
+
 
     drawnow
-%         writeVideo(outputV,getframe(gcf))
 
-%     if dt1(it-1) > 0.9
-%         frame
-%         break
-%     end
     if mod(it, 50) ~= 0
         delete(redTraj)
         delete(redTrajd1)
         delete(redTrajd2)
-        % delete(redTrajd1MF)
-        % delete(redTrajd2MF)
-        % delete(redTraj1)
-        % delete(redTraj2)
-        % delete(redTraj3)
-        % delete(redTraj4)
     end
+
 end
+cd ~/Dropbox/study/Project/TrajonMap
