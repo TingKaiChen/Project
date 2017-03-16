@@ -149,8 +149,8 @@ bf = [x_b;y_b;zeros(size(x_b))];
 bfd1 = [xd1_b;yd1_b;zeros(size(xd1_b))];
 bfd2 = [xd2_b;yd2_b;zeros(size(xd2_b))];
 
-vb = 'off';     % Visibility of trajectory All
-vbd1 = 'off';     % Visibility of trajectory L1+L2
+vb = 'on';     % Visibility of trajectory All
+vbd1 = 'on';     % Visibility of trajectory L1+L2
 vbd2 = 'on';     % Visibility of trajectory L3+L4
 
 % Print 1st point cloud
