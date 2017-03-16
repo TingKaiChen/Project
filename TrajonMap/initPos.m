@@ -48,14 +48,12 @@ dr = 1.0;
 rot = eul2rotm([deg2rad(-3.6),0,0]);
 rot = rot(1:2,1:2);
 traj = [35.4;46.1];
-rotd1 = rot;
-trajd1 = traj;
-rotd2 = rot;
-trajd2 = traj;
-rotd1MF = rot;
-trajd1MF = traj;
-rotd2MF = rot;
-trajd2MF = traj;
+rotd1 = eul2rotm([deg2rad(-3.6),0,0]);
+rotd1 = rotd1(1:2,1:2);
+trajd1 = [35.2;46.1];
+rotd2 = eul2rotm([deg2rad(-3.6),0,0]);
+rotd2 = rotd2(1:2,1:2);
+trajd2 = [35.4;46.1];
 
 preframe = 1;
 d1_b = deg1(preframe,:);
@@ -151,8 +149,8 @@ bf = [x_b;y_b;zeros(size(x_b))];
 bfd1 = [xd1_b;yd1_b;zeros(size(xd1_b))];
 bfd2 = [xd2_b;yd2_b;zeros(size(xd2_b))];
 
-vb = 'on';     % Visibility of trajectory All
-vbd1 = 'off';     % Visibility of trajectory L1+L2
+vb = 'off';     % Visibility of trajectory All
+vbd1 = 'on';     % Visibility of trajectory L1+L2
 vbd2 = 'off';     % Visibility of trajectory L3+L4
 
 % Print 1st point cloud
@@ -358,8 +356,8 @@ for frame=1+step:step:(m/16)
         set(pc, 'SizeData', 5,'MarkerFaceColor','y','Visible',vb)
         set(pcd1, 'SizeData', 5,'MarkerFaceColor','y','Visible',vbd1)
         set(pcd2, 'SizeData', 5,'MarkerFaceColor','y','Visible',vbd2)
-        break
+        % break
     end
-    disp(frame)
+    % disp(frame)
 end
 cd ~/Dropbox/study/Project/TrajonMap
