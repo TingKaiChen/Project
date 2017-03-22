@@ -1,5 +1,14 @@
 clc
 clear
+% Show the digital map
+A = imread('../Real_Map/utmMap.png');
+image([0,size(A,2)/10],[0,size(A,1)/10],flip(A,1))
+truesize
+set(gca,'ydir','normal');
+axis equal
+
+hold on
+
 % Read in CSV file and seperate the data
 % cd ~/Dropbox/study/Project/icp
 data = csvread('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_39_37.csv');
@@ -37,9 +46,12 @@ step = 5;
 dr = 1.0;
 
 % Initial pose
-rotd1 = [1 0;0 1];
-trajd1 = [0;0];
+rotd1 = eul2rotm([deg2rad(-3.6),0,0]);
+rotd1 = rotd1(1:2,1:2);
+trajd1 = [35.2;46.1];
 wallcloud = [];
+wallcolor = 'b';
+trajcolor = 'g';
 bfd1 = [];
 
 vb = 'on';     % Visibility of trajectory All
@@ -115,22 +127,21 @@ for frame=1:step:(m/16)
         q = rotd1*q+trajd1;
         % scatter(qx,qy,'filled','MarkerFaceColor','b','SizeData',3)
         wallcloud = [wallcloud q];
-        scatter(q(1,:),q(2,:),'filled','MarkerFaceColor','k','SizeData',3)
+        scatter(q(1,:),q(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3)
         hold on
         drawnow
     else
-        wallcloud = afd1(1:2,:);
-        scatter(afd1(1,:),afd1(2,:),'filled','MarkerFaceColor','k','SizeData',3)
+        wallcloud = rotd1*afd1(1:2,:)+trajd1;
+        scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3)
         hold on
         drawnow
     end 
 
+    % Trajectory
+    scatter(trajd1(1,:),trajd1(2,:),'filled','MarkerFaceColor',trajcolor,'SizeData',3)
 
-
-    % scatter(afd1(1,:),afd1(2,:),'filled','MarkerFaceColor',c,'SizeData',3);
-    % hold on
-    % xlim([-20 20])
-    % ylim([50 75]) 
+    xlim([0 size(A,2)/10])
+    ylim([0 size(A,1)/10])
     axis equal
 
 
