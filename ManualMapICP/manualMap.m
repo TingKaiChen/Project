@@ -53,6 +53,7 @@ wallcloud = [];
 wallcolor = 'b';
 trajcolor = 'g';
 bfd1 = [];
+trajectory = [];
 
 vb = 'on';     % Visibility of trajectory All
 vbd1 = 'on';     % Visibility of trajectory L1+L2
@@ -116,6 +117,7 @@ for frame=1:step:(m/16)
 
         rotd1 = TRd1(1:2,1:2)'*rotd1;
         trajd1 = trajd1-rotd1*TTd1(1:2,1);
+        trajectory = [trajectory trajd1];
 
         % Find the unmatched points and add them into wall clouds
         qid = unique(q_idxd1);
@@ -129,12 +131,10 @@ for frame=1:step:(m/16)
         wallcloud = [wallcloud q];
         scatter(q(1,:),q(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3)
         hold on
-        drawnow
     else
         wallcloud = rotd1*afd1(1:2,:)+trajd1;
         scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3)
         hold on
-        drawnow
     end 
 
     % Trajectory
@@ -143,6 +143,7 @@ for frame=1:step:(m/16)
     xlim([0 size(A,2)/10])
     ylim([0 size(A,1)/10])
     axis equal
+    drawnow
 
 
 
@@ -155,7 +156,7 @@ for frame=1:step:(m/16)
 
 end
 % Save the wall point cloud
-save('wallcloud.mat','wallcloud')
+save('wallcloud.mat','wallcloud','trajectory')
 
 
 
