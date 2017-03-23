@@ -1,0 +1,17 @@
+getloc frame 1 
+error: 0.3862
+
+getloc frame 1 DR
+error: 0.0037
+
+getloc frame 81
+error: 14.1508
+
+getloc frame 81
+error: 13.9823
+
+getloc frame 81 init
+error: 0.5983
+
+getloc frame 81 init DR
+error: 0.4343
