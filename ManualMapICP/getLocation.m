@@ -11,7 +11,7 @@ hold on
 
 % Load in data of wall point cloud and trajectory
 load('wallcloud.mat')
-wallcloud = repmat(wallcloud,1,10);
+% wallcloud = repmat(wallcloud,1,10);
 
 % Read in CSV file and seperate the data
 % cd ~/Dropbox/study/Project/icp
@@ -53,9 +53,12 @@ dr = 1.0;
 frame = 1;
 it = (frame+4)/5;
 iter = 20;
+% rotd1 = [deg2rad(20) 0 0];
+% rotd1 = eul2rotm(rotd1);
+% rotd1 = rotd1(1:2,1:2);
 rotd1 = [1 0;0 1];
-locd1 = [35;46];
-% locd1 = [36;47];
+% locd1 = [35;46];
+locd1 = [0;0];
 wallcolor = 'b';
 trajcolor = 'y';
 loccolor = 'g';
@@ -117,9 +120,16 @@ for frame=1:step:(m/16)
 	afd2 = [xd2_a;yd2_a;zeros(size(xd2_a))];
 	wc = [wallcloud;zeros(1,size(wallcloud,2))];    % 3D representation of wallcloud
 
-	afd1(1:2,:)=rotd1*afd1(1:2,:)+locd1;
+	% afd1(1:2,:)=rotd1*afd1(1:2,:)+locd1;
+	% if frame == 1
+	% 	scatter(afd1(1,:),afd1(2,:),'filled','MarkerFaceColor','k','SizeData',3);
+	% 	scatter(locd1(1,:),locd1(2,:),'filled','MarkerFaceColor','c','SizeData',30);
+	% end
 
 	[TRd1,TTd1,~] = icp(wc, afd1, iter, 'Matching', 'kDtree', 'WorstRejection', 0.1);
+
+	rotd1 = [1 0;0 1];
+	locd1 = [0;0];
 
 	rotd1 = TRd1(1:2,1:2)*rotd1;
 	locd1 = TRd1(1:2,1:2)*locd1+TTd1(1:2,1);
@@ -152,6 +162,7 @@ for frame=1:step:(m/16)
 
 	if frame == 201
 		break
+		% frame	% 71, 186
 		% w = waitforbuttonpress;
 	end
 
