@@ -11,7 +11,7 @@ hold on
 
 % Load in data of wall point cloud and trajectory
 load('wallcloud.mat')
-% wallcloud = repmat(wallcloud,1,10);
+wallcloud = repmat(wallcloud,1,10);
 
 % Read in CSV file and seperate the data
 % cd ~/Dropbox/study/Project/icp
