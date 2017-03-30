@@ -11,7 +11,7 @@ hold on
 
 % Load in data of wall point cloud and trajectory
 load('wallcloud.mat')
-wallcloud = repmat(wallcloud,1,10);
+% wallcloud = repmat(wallcloud,1,10);
 
 % Read in CSV file and seperate the data
 % cd ~/Dropbox/study/Project/icp
@@ -53,17 +53,17 @@ dr = 1.0;
 frame = 1;
 it = (frame+4)/5;
 iter = 20;
+% rotd1 = [deg2rad(20) 0 0];
+% rotd1 = eul2rotm(rotd1);
+% rotd1 = rotd1(1:2,1:2);
 rotd1 = [1 0;0 1];
 locd1 = [35;46];
-% locd1 = [36;47];
-wallcolor = 'b';
-trajcolor = 'y';
-loccolor = 'g';
+% locd1 = [0;0];
 
 
-vb = 'on';     % Visibility of trajectory All
-vbd1 = 'on';     % Visibility of trajectory L1+L2
-vbd2 = 'on';     % Visibility of trajectory L3+L4
+% vb = 'on';     % Visibility of trajectory All
+% vbd1 = 'on';     % Visibility of trajectory L1+L2
+% vbd2 = 'on';     % Visibility of trajectory L3+L4
 
 for frame=1:step:(m/16)
 	if frame~=m/16
@@ -138,7 +138,7 @@ for frame=1:step:(m/16)
 	sca = scatter(obj(1,:),obj(2,:),'filled','MarkerFaceColor','r','SizeData',3);
 	hold on
 	% Location
-	scatter(locd1(1,:),locd1(2,:),'filled','MarkerFaceColor',loccolor,'SizeData',30)
+	scatter(locd1(1,:),locd1(2,:),'filled','MarkerFaceColor','g','SizeData',30)
 	hold on
 	redLoc = scatter(locd1(1,:),locd1(2,:),'filled','MarkerFaceColor','m','SizeData',30);
 	hold on
@@ -152,6 +152,7 @@ for frame=1:step:(m/16)
 
 	if frame == 201
 		break
+		% frame	% 71, 186
 		% w = waitforbuttonpress;
 	end
 
