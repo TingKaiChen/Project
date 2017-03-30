@@ -11,6 +11,7 @@ hold on
 
 % Load in data of wall point cloud and trajectory
 load('wallcloud.mat')
+% wallcloud = repmat(wallcloud,1,10);
 
 % Read in CSV file and seperate the data
 % cd ~/Dropbox/study/Project/icp
@@ -125,11 +126,11 @@ for frame=1:step:(m/16)
 	obj = TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2);
 	ob = [obj;zeros(1,size(obj,2))];
 
-	% [TRd1,TTd1,~] = icpMatch(wc, ob, iter, 'Matching', 'kDtree', 'WorstRejection', 1);
+	[TRd1,TTd1,~] = icpMatch(wc, ob, iter, 'Matching', 'kDtree', 'WorstRejection', 1);
 
-	% rotd1 = TRd1(1:2,1:2)*rotd1;
-	% locd1 = TRd1(1:2,1:2)*locd1+TTd1(1:2,1);
-	% obj = TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2);
+	rotd1 = TRd1(1:2,1:2)*rotd1;
+	locd1 = TRd1(1:2,1:2)*locd1+TTd1(1:2,1);
+	obj = TRd1(1:2,1:2)*obj+TTd1(1:2);
 
 	% Point cloud
 	scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',3)
