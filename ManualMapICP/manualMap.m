@@ -2,11 +2,18 @@ clc
 clear
 % Show the digital map
 A = imread('../Real_Map/utmMap.png');
+figure(1)
 image([0,size(A,2)/10],[0,size(A,1)/10],flip(A,1))
 truesize
 set(gca,'ydir','normal');
 axis equal
+hold on
 
+figure(2)
+image([0,size(A,2)/10],[0,size(A,1)/10],flip(A,1))
+truesize
+set(gca,'ydir','normal');
+axis equal
 hold on
 
 % Read in CSV file and seperate the data
@@ -46,29 +53,27 @@ step = 5;
 dr = 1.0;
 
 % Initial pose
-rotd1 = eul2rotm([deg2rad(-3.6),0,0]);
-rotd1 = rotd1(1:2,1:2);
-trajd1 = [35.2;46.1];
 wallcloud = [];
-wallcolor = 'b';
-trajcolor = 'g';
-bfd1 = [];
-trajectory = [];
 
-vb = 'on';     % Visibility of trajectory All
-vbd1 = 'on';     % Visibility of trajectory L1+L2
-vbd2 = 'on';     % Visibility of trajectory L3+L4
-
-it = 1;
-for frame=1:step:(m/16)
-    iter = 20;
-    if frame~=m/16
-        while xd1(frame, 1)==0
-            frame = frame+1;
-        end
-    end
-    if frame >201
-        break
+for it=1:3
+    if it == 1
+        frame = 1;
+        rotd1 = eul2rotm([deg2rad(-3.6),0,0]);
+        rotd1 = rotd1(1:2,1:2);
+        trajd1 = [35.2;46.1];
+        wallcolor = 'b';
+    elseif it == 2
+        frame = 101;
+        rotd1 = eul2rotm([deg2rad(-28.6479) 0 0]);
+        rotd1 = rotd1(1:2,1:2);
+        trajd1 = [37.35;48.15];
+        wallcolor = 'r';
+    elseif it == 3
+        frame = 201;
+        rotd1 = eul2rotm([deg2rad(-72.7656) 0 0]);
+        rotd1 = rotd1(1:2,1:2);
+        trajd1 = [42.5;48.8];
+        wallcolor = 'k';
     end
 
     d1_a = deg1(frame,:);
@@ -91,7 +96,6 @@ for frame=1:step:(m/16)
     v3_a = v3_a(d3_a ~= pi/2);
     v4_a = v4_a(d4_a ~= pi/2);
     
-
     [x1_a, y1_a] = pol2cart(d1_a, v1_a);
     [x2_a, y2_a] = pol2cart(d2_a, v2_a);
     [x3_a, y3_a] = pol2cart(d3_a, v3_a);
@@ -112,51 +116,39 @@ for frame=1:step:(m/16)
     afd1 = [xd1_a;yd1_a;zeros(size(xd1_a))];
     afd2 = [xd2_a;yd2_a;zeros(size(xd2_a))];
 
-    if frame ~= 1
-        [TRd1,TTd1,q_idxd1] = icpMatch(afd1, bfd1, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
+    afd1 = rotd1*afd1(1:2,:)+trajd1;
 
-        rotd1 = TRd1(1:2,1:2)'*rotd1;
-        trajd1 = trajd1-rotd1*TTd1(1:2,1);
-        trajectory = [trajectory trajd1];
-
-        % Find the unmatched points and add them into wall clouds
-        qid = unique(q_idxd1);
-        qx = afd1(1,:);
-        qy = afd1(2,:);
-        qx(qid)=[];
-        qy(qid)=[];
-        q = [qx;qy];
-        q = rotd1*q+trajd1;
-        % scatter(qx,qy,'filled','MarkerFaceColor','b','SizeData',3)
-        wallcloud = [wallcloud q];
-        scatter(q(1,:),q(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3)
-        hold on
-    else
-        wallcloud = rotd1*afd1(1:2,:)+trajd1;
-        scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3)
-        hold on
-    end 
-
-    % Trajectory
-    scatter(trajd1(1,:),trajd1(2,:),'filled','MarkerFaceColor',trajcolor,'SizeData',3)
-
-    xlim([0 size(A,2)/10])
-    ylim([0 size(A,1)/10])
-    axis equal
+    % Remove overlap
+    % Seperate from x = 44, 60
+    if it == 1
+        sep = find(afd1(1,:)<44);
+        afd1_simp = afd1(:,sep);
+    elseif it == 2
+        sep = find(afd1(1,:)>=44 & afd1(1,:)<60);
+        afd1_simp = afd1(:,sep);
+    elseif it == 3
+        sep = find(afd1(1,:)>=60);
+        afd1_simp = afd1(:,sep);
+    end
+    figure(1)
+    scatter(afd1(1,:),afd1(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3)
+    hold on
+    xlim([10 100])
+    ylim([35 size(A,1)/10])
     drawnow
 
+    figure(2)
+    scatter(afd1_simp(1,:),afd1_simp(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3)
+    hold on
+    xlim([10 100])
+    ylim([35 size(A,1)/10])
+    drawnow
 
-
-    it = it+1;
-    preframe = frame;
-    bf = af;
-    bfd1 = afd1;
-    bfd2 = afd2;
-
+    wallcloud = [wallcloud afd1_simp];
 
 end
 % Save the wall point cloud
-save('wallcloud.mat','wallcloud','trajectory')
+save('wallcloud.mat','wallcloud')
 
 
 
