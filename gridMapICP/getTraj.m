@@ -57,6 +57,7 @@ y = [y1,y2,y3,y4];
 
 step = 5;
 dr = 1.0;
+wr = 0.1;
 
 % Initial pose
 gpsRot = eul2rotm([deg2rad(hdir(1)),0,0]);
@@ -127,19 +128,22 @@ for frame=1:step:(m/16)
 
     % Initial condition
     %% GPS initial
-    gpsTraj = gps(frame,:)-gps0+gpsTraj;
-    initRot = eul2rotm([-deg2rad(hdir(frame)-hdir(1)),0,0]);
-    initRot = initRot(1:2,1:2);
-    initPos = gpsTraj';
+    % gpsTraj = gps(frame,:)-gps0+gpsTraj;
+    % initRot = eul2rotm([-deg2rad(hdir(frame)-hdir(1)),0,0]);
+    % initRot = initRot(1:2,1:2);
+    % initPos = gpsTraj';
     %% Original initial
-    % initRot = rotd1;
-    % initPos = trajd1;
+    initRot = rotd1;
+    initPos = trajd1;
 
     afd1(1:2,:)=initRot*afd1(1:2,:)+initPos;
-    [TRd1,TTd1] = icpMatch(wc, afd1, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
-
+    [TRd1,TTd1] = icp(wc, afd1, iter, 'Matching', 'kDtree', 'WorstRejection', wr);
     rotd1 = TRd1(1:2,1:2)*initRot;
     trajd1 = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
+    afd1(1:2,:)=TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2,1);
+    [TRd1,TTd1] = icpMatch(wc, afd1, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
+    rotd1 = TRd1(1:2,1:2)*rotd1;
+    trajd1 = TRd1(1:2,1:2)*trajd1+TTd1(1:2,1);
     afd1(1:2,:)=TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2,1);
 
     wall=scatter(afd1(1,:),afd1(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3);
