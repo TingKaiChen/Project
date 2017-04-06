@@ -61,6 +61,7 @@ locd1 = [35;46];
 % locd1 = [0;0];
 
 
+
 % vb = 'on';     % Visibility of trajectory All
 % vbd1 = 'on';     % Visibility of trajectory L1+L2
 % vbd2 = 'on';     % Visibility of trajectory L3+L4
@@ -117,9 +118,16 @@ for frame=1:step:(m/16)
 	afd2 = [xd2_a;yd2_a;zeros(size(xd2_a))];
 	wc = [wallcloud;zeros(1,size(wallcloud,2))];    % 3D representation of wallcloud
 
-	afd1(1:2,:)=rotd1*afd1(1:2,:)+locd1;
+	% afd1(1:2,:)=rotd1*afd1(1:2,:)+locd1;
+	% if frame == 1
+	% 	scatter(afd1(1,:),afd1(2,:),'filled','MarkerFaceColor','k','SizeData',3);
+	% 	scatter(locd1(1,:),locd1(2,:),'filled','MarkerFaceColor','c','SizeData',30);
+	% end
 
 	[TRd1,TTd1,~] = icp(wc, afd1, iter, 'Matching', 'kDtree', 'WorstRejection', 0.1);
+
+	rotd1 = [1 0;0 1];
+	locd1 = [0;0];
 
 	rotd1 = TRd1(1:2,1:2)*rotd1;
 	locd1 = TRd1(1:2,1:2)*locd1+TTd1(1:2,1);
