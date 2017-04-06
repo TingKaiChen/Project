@@ -16,7 +16,14 @@ hold on
 load('wallcloud.mat')
 
 % Read in CSV file and seperate the data
-% cd ~/Dropbox/study/Project/icp
+% GPS Latitude and Longitude
+gps = csvread('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_39_37_gps.csv');
+hdir = gps(:,1);    % Heading direction
+gps = gps(:,[3,4])/100;
+gps = floor(gps)+(gps-floor(gps))*100/60;
+[gps_x,gps_y,~]=deg2utm(gps(:,1),gps(:,2));
+gps = [gps_x,gps_y];
+% LiDAR
 data = csvread('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_39_37.csv');
 [m, n] = size(data);
 degmat = data(1:2:m, :);
@@ -52,9 +59,14 @@ step = 5;
 dr = 1.0;
 
 % Initial pose
+gpsRot = eul2rotm([deg2rad(hdir(1)),0,0]);
+gpsRot = gpsRot(1:2,1:2);
+gps = gps*gpsRot';
 rotd1 = eul2rotm([deg2rad(-3.6),0,0]);
 rotd1 = rotd1(1:2,1:2);
 trajd1 = [35.2;46.1];
+gps0 = gps(1,:);
+gpsTraj = trajd1';
 wallcolor = 'r';
 trajcolor = 'm';
 bfd1 = [];
@@ -114,11 +126,20 @@ for frame=1:step:(m/16)
     afd2 = [xd2_a;yd2_a;zeros(size(xd2_a))];
 
     % Initial condition
-    afd1(1:2,:)=rotd1*afd1(1:2,:)+trajd1;
+    %% GPS initial
+    gpsTraj = gps(frame,:)-gps0+gpsTraj;
+    initRot = eul2rotm([-deg2rad(hdir(frame)-hdir(1)),0,0]);
+    initRot = initRot(1:2,1:2);
+    initPos = gpsTraj';
+    %% Original initial
+    % initRot = rotd1;
+    % initPos = trajd1;
+
+    afd1(1:2,:)=initRot*afd1(1:2,:)+initPos;
     [TRd1,TTd1] = icpMatch(wc, afd1, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
 
-    rotd1 = TRd1(1:2,1:2)*rotd1;
-    trajd1 = TRd1(1:2,1:2)*trajd1+TTd1(1:2,1);
+    rotd1 = TRd1(1:2,1:2)*initRot;
+    trajd1 = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
     afd1(1:2,:)=TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2,1);
 
     wall=scatter(afd1(1,:),afd1(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3);
@@ -126,11 +147,12 @@ for frame=1:step:(m/16)
 
     % Trajectory
     scatter(trajd1(1,:),trajd1(2,:),'filled','MarkerFaceColor',trajcolor,'SizeData',4)
+    scatter(gpsTraj(1),gpsTraj(2),'filled','MarkerFaceColor','y','SizeData',4)
 
     xlim([0 size(A,2)/10])
     ylim([0 size(A,1)/10])
     axis equal
-    disp(frame)
+    % disp(frame)
     drawnow
 
 
@@ -140,7 +162,8 @@ for frame=1:step:(m/16)
     bf = af;
     bfd1 = afd1;
     bfd2 = afd2;
-    % if frame >700
+    gps0 = gps(frame,:);
+    % if frame >1000
     %     break
     % end
     delete(wall)
