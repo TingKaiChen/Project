@@ -2,7 +2,10 @@ clc
 clear
 % Show the digital map
 A = imread('../Real_Map/utmMap.png');
-image([0,size(A,2)/10],[0,size(A,1)/10],flip(A,1))
+% Grayscale
+A(:,:,1)=A(:,:,2);
+A(:,:,3)=A(:,:,2);
+image([0,size(A,2)/10],[0,size(A,1)/10],flip(A,1),'AlphaData',0.5)
 truesize
 set(gca,'ydir','normal');
 axis equal
@@ -67,9 +70,9 @@ for frame=1:step:(m/16)
             frame = frame+1;
         end
     end
-    if frame >201
-        break
-    end
+    % if frame >201
+    %     break
+    % end
 
     d1_a = deg1(frame,:);
     d2_a = deg2(frame,:);
