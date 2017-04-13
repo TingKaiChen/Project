@@ -17,61 +17,34 @@ load('wallcloud.mat')
 
 % Read in CSV file and seperate the data
 % GPS Latitude and Longitude
-gps = csvread('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_39_37_gps.csv');
-hdir = gps(:,1);    % Heading direction
-gps = gps(:,[3,4])/100;
-gps = floor(gps)+(gps-floor(gps))*100/60;
-[gps_x,gps_y,~]=deg2utm(gps(:,1),gps(:,2));
-gps = [gps_x,gps_y];
-% LiDAR
-data = csvread('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_39_37.csv');
-[m, n] = size(data);
-degmat = data(1:2:m, :);
-val1 = data(2:16:m, :);
-val2 = data(4:16:m, :);
-val3 = data(6:16:m, :);
-val4 = data(8:16:m, :);
+% gps = csvread('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_39_37_gps.csv');
+% hdir = gps(:,1);    % Heading direction
+% gps = gps(:,[3,4])/100;
+% gps = floor(gps)+(gps-floor(gps))*100/60;
+% [gps_x,gps_y,~]=deg2utm(gps(:,1),gps(:,2));
+% gps = [gps_x,gps_y];
 
-% Set valmat and degmat to proper value
-degmat = degmat./(5760).*(pi)+(pi/2);  % Radians
-deg1 = degmat(1:8:m/2, :);
-deg2 = degmat(2:8:m/2, :);
-deg3 = degmat(3:8:m/2, :);
-deg4 = degmat(4:8:m/2, :);
-val1 = val1/100;
-val2 = val2/100;
-val3 = val3/100;
-val4 = val4/100;
-
-[x1, y1] = pol2cart(deg1, val1);
-[x2, y2] = pol2cart(deg2, val2);
-[x3, y3] = pol2cart(deg3, val3);
-[x4, y4] = pol2cart(deg4, val4);
-
-xd1 = [x1,x2];
-yd1 = [y1,y2];
-xd2 = [x3,x4];
-yd2 = [y3,y4];
-x = [x1,x2,x3,x4];
-y = [y1,y2,y3,y4];
+% Load in LiDAR data
+load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_15_02_21.mat')
 
 step = 5;
 dr = 1.0;
 wr = 0.1;
 
 % Initial pose
-gpsRot = eul2rotm([deg2rad(hdir(1)),0,0]);
-gpsRot = gpsRot(1:2,1:2);
-gps = gps*gpsRot';
+% gpsRot = eul2rotm([deg2rad(hdir(1)),0,0]);
+% gpsRot = gpsRot(1:2,1:2);
+% gps = gps*gpsRot';
 rotd1 = eul2rotm([deg2rad(-3.6),0,0]);
 rotd1 = rotd1(1:2,1:2);
 trajd1 = [35.2;46.1];
-gps0 = gps(1,:);
-gpsTraj = trajd1';
+% gps0 = gps(1,:);
+% gpsTraj = trajd1';
 wallcolor = 'r';
 trajcolor = 'm';
 bfd1 = [];
-wc = [wallcloud;zeros(1,size(wallcloud,2))];
+% wc = [wallcloud;zeros(1,size(wallcloud,2))];
+wc = wallcloud;
 scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',3)
 scatter(trajectory(1,:),trajectory(2,:),'filled','MarkerFaceColor','g','SizeData',5)
 
@@ -151,7 +124,7 @@ for frame=1:step:(m/16)
 
     % Trajectory
     scatter(trajd1(1,:),trajd1(2,:),'filled','MarkerFaceColor',trajcolor,'SizeData',4)
-    scatter(gpsTraj(1),gpsTraj(2),'filled','MarkerFaceColor','y','SizeData',4)
+    % scatter(gpsTraj(1),gpsTraj(2),'filled','MarkerFaceColor','y','SizeData',4)
 
     xlim([0 size(A,2)/10])
     ylim([0 size(A,1)/10])
@@ -166,7 +139,7 @@ for frame=1:step:(m/16)
     bf = af;
     bfd1 = afd1;
     bfd2 = afd2;
-    gps0 = gps(frame,:);
+    % gps0 = gps(frame,:);
     % if frame >1000
     %     break
     % end

@@ -112,29 +112,31 @@ for frame=1:step:(m/16)
     afd2 = [xd2_a;yd2_a;zeros(size(xd2_a))];
 
     if frame ~= 1
-        wc = [wallcloud;zeros(1,size(wallcloud,2))];
+        % wc = [wallcloud;zeros(1,size(wallcloud,2))];
         % Initial condition
         afd1(1:2,:)=rotd1*afd1(1:2,:)+trajd1;
-        [TRd1,TTd1,q_idxd1] = icpMatch(wc, afd1, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
+        [TRd1,TTd1,p_idxd1] = icpMatch(wallcloud, afd1, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
 
         rotd1 = TRd1(1:2,1:2)*rotd1;
         trajd1 = TRd1(1:2,1:2)*trajd1+TTd1(1:2,1);
         trajectory = [trajectory trajd1];
 
         % Find the unmatched points and add them into wall clouds
-        qid = unique(q_idxd1);
-        qx = afd1(1,:);
-        qy = afd1(2,:);
-        qx(qid)=[];
-        qy(qid)=[];
-        q = [qx;qy];
-        q = TRd1(1:2,1:2)*q+TTd1(1:2,1);
-        % scatter(qx,qy,'filled','MarkerFaceColor','b','SizeData',3)
-        wallcloud = [wallcloud q];
-        scatter(q(1,:),q(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3)
+        % pid = unique(p_idxd1);
+        % px = afd1(1,:);
+        % py = afd1(2,:);
+        % px(pid)=[];
+        % py(pid)=[];
+        % p = [px;py];
+        p = afd1(:,p_idxd1);
+        p = TRd1*p+TTd1;
+        % scatter(px,py,'filled','MarkerFaceColor','b','SizeData',3)
+        wallcloud = [wallcloud p];
+        scatter(p(1,:),p(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3)
         hold on
     else
         wallcloud = rotd1*afd1(1:2,:)+trajd1;
+        wallcloud = [wallcloud;zeros(1,size(wallcloud,2))];
         scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3)
         hold on
     end 
