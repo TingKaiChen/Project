@@ -1,4 +1,4 @@
-function [TR, TT, pindex] = icpMatch(q,p,varargin)
+function [TR, TT, pindex, qindex] = icpMatch(q,p,varargin)
 % Perform the Iterative Closest Point algorithm on three dimensional point
 % clouds.
 %
@@ -227,6 +227,7 @@ for k=1:arg.iter
         p_idx(pairs(mindist>arg.WorstRejection)) = false;
         invp_idx(pairs(mindist>arg.UnmatchDistance)) = true;
         q_idx = match(p_idx);
+        invq_idx = ~q_idx;
         maxdist = mindist(invp_idx);
         mindist = mindist(p_idx);
         dist_l = [dist_l size(maxdist,1)];
@@ -307,6 +308,7 @@ if not(arg.ReturnAll)
     TT = TT(:,:,end);
 end
 pindex = invp_idx;
+qindex = q_idx;
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
