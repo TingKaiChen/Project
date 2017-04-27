@@ -15,8 +15,11 @@ hold on
 % Load in data of wall point cloud and trajectory
 load('wallcloud.mat')
 
+% Load in the trajectory of "add-only" strategy
+load('./trajectory/traj_add_150221.mat')
+
 % Load in LiDAR data
-load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_10_17.mat')
+load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_15_02_21.mat')
 
 step = 5;
 dr = 1.0;
@@ -30,11 +33,10 @@ wallcolor = 'r';
 trajcolor = 'm';
 bfd1 = [];
 % wc = [wallcloud;zeros(1,size(wallcloud,2))];
-wc_U = wallcloud;
+wc_U = round(wallcloud*10)/10;
 wc_update=[];
-traj_data=[];
 scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',3)
-scatter(trajectory(1,:),trajectory(2,:),'filled','MarkerFaceColor','g','SizeData',5)
+scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor','g','SizeData',10)
 
 it = 1;
 for frame=1:step:(m/16)
@@ -71,6 +73,15 @@ for frame=1:step:(m/16)
     [x3_a, y3_a] = pol2cart(d3_a, v3_a);
     [x4_a, y4_a] = pol2cart(d4_a, v4_a);
 
+    x1_a = round(x1_a*10)/10;
+    x2_a = round(x2_a*10)/10;
+    x3_a = round(x3_a*10)/10;
+    x4_a = round(x4_a*10)/10;
+    y1_a = round(y1_a*10)/10;
+    y2_a = round(y2_a*10)/10;
+    y3_a = round(y3_a*10)/10;
+    y4_a = round(y4_a*10)/10;
+
     pt12_a = union([x1_a;y1_a]',[x2_a;y2_a]','rows')';
     xd1_a = pt12_a(1,:);
     yd1_a = pt12_a(2,:);
@@ -90,7 +101,7 @@ for frame=1:step:(m/16)
     %% Original initial
     initRot = rotd1;
     initPos = trajd1;
-    wc_U = [wc_U wc_update];
+    wc_U = [wc_U round(wc_update*10)/10];
 
     afd1(1:2,:)=initRot*afd1(1:2,:)+initPos*ones(1,size(afd1(1:2,:),2));
     [TRd1,TTd1]=icp(wc_U,afd1,iter,'Matching','kDtree','WorstRejection',wr);
