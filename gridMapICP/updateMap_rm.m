@@ -15,11 +15,14 @@ hold on
 % Load in data of wall point cloud and trajectory
 load('wallcloud.mat')
 
+% Load in the trajectory of "add-only" strategy
+load('./trajectory/traj_add_101017.mat')
+
 % Load in LiDAR data
-load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_50_35.mat')
+load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_10_17.mat')
 
 %Video
-outputV = VideoWriter('../figure/rm_105035_rat10');
+outputV = VideoWriter('../figure/rm_101017_rad15');
 open(outputV)
 
 step = 5;
@@ -39,7 +42,7 @@ wc_U = wc;
 wc_update=[];
 wc_remove=[];
 % scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',3)
-scatter(trajectory(1,:),trajectory(2,:),'filled','MarkerFaceColor','g','SizeData',5)
+scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor','g','SizeData',10)
 
 it = 1;
 for frame=1:step:(m/16)
@@ -142,9 +145,9 @@ for frame=1:step:(m/16)
         index = (wc_rad>minAng | wc_rad<(maxAng-2*pi));
         wc_mask = wc_mask(:,index);
         wc_rho = wc_rho(index);
-        [~,stindex]=sort(wc_rho);
-        wc_mask = wc_mask(:,stindex(1:floor(length(stindex)/10)));
-        % wc_mask = wc_mask(:,wc_rho<=15);
+        % [~,stindex]=sort(wc_rho);
+        % wc_mask = wc_mask(:,stindex(1:floor(length(stindex)/10)));
+        wc_mask = wc_mask(:,wc_rho<=15);
     elseif minAng < -pi
         % wc_mask = wc_mask(:,(wc_rad>(2*pi+minAng) | wc_rad<maxAng));
 
@@ -160,9 +163,9 @@ for frame=1:step:(m/16)
         index = (wc_rad>(2*pi+minAng) | wc_rad<maxAng);
         wc_mask = wc_mask(:,index);
         wc_rho = wc_rho(index);
-        [~,stindex]=sort(wc_rho);
-        wc_mask = wc_mask(:,stindex(1:floor(length(stindex)/10)));
-        % wc_mask = wc_mask(:,wc_rho<=15);
+        % [~,stindex]=sort(wc_rho);
+        % wc_mask = wc_mask(:,stindex(1:floor(length(stindex)/10)));
+        wc_mask = wc_mask(:,wc_rho<=15);
     else
         % wc_mask = wc_mask(:,(wc_rad>minAng & wc_rad<maxAng));
 
@@ -178,9 +181,9 @@ for frame=1:step:(m/16)
         index = (wc_rad>minAng & wc_rad<maxAng);
         wc_mask = wc_mask(:,index);
         wc_rho = wc_rho(index);
-        [~,stindex]=sort(wc_rho);
-        wc_mask = wc_mask(:,stindex(1:floor(length(stindex)/10)));
-        % wc_mask = wc_mask(:,wc_rho<=15);
+        % [~,stindex]=sort(wc_rho);
+        % wc_mask = wc_mask(:,stindex(1:floor(length(stindex)/10)));
+        wc_mask = wc_mask(:,wc_rho<=15);
 
 
         % [x,y] = pol2cart(wc_rad(index),wc_rho(index));
@@ -207,6 +210,7 @@ for frame=1:step:(m/16)
     wall=scatter(afd1(1,:),afd1(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3);
     hold on
     
+    % Angle of view
     [maskx,masky]=pol2cart([maxAng minAng],[maxDist maxDist]);
     line1 = line([trajd1(1) trajd1(1)+maskx(1)], [trajd1(2) trajd1(2)+masky(1)]);
     hold on

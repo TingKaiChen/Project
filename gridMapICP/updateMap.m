@@ -16,7 +16,7 @@ hold on
 load('wallcloud.mat')
 
 % Load in LiDAR data
-load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_50_35.mat')
+load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_10_17.mat')
 
 step = 5;
 dr = 1.0;
@@ -32,6 +32,7 @@ bfd1 = [];
 % wc = [wallcloud;zeros(1,size(wallcloud,2))];
 wc_U = wallcloud;
 wc_update=[];
+traj_data=[];
 scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',3)
 scatter(trajectory(1,:),trajectory(2,:),'filled','MarkerFaceColor','g','SizeData',5)
 
@@ -123,7 +124,7 @@ for frame=1:step:(m/16)
     drawnow
 
 
-
+    traj_data = [traj_data trajd1];
     it = it+1;
     preframe = frame;
     bf = af;
