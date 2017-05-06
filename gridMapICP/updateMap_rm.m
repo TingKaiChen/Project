@@ -22,8 +22,8 @@ load('./trajectory/traj_add_101017.mat')
 load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_10_17.mat')
 
 %Video
-outputV = VideoWriter('../figure/rm_101017_rad15');
-open(outputV)
+% outputV = VideoWriter('../figure/rm_101017_rad15');
+% open(outputV)
 
 step = 5;
 dr = 1.0;
@@ -227,7 +227,7 @@ for frame=1:step:(m/16)
     drawnow
 
     for j = 1:5
-        writeVideo(outputV,getframe(gcf))
+        % writeVideo(outputV,getframe(gcf))
     end
 
     it = it+1;
@@ -249,8 +249,8 @@ end
 % Save the wall point cloud
 % save('wallcloud.mat','wallcloud','trajectory')
 
-writeVideo(outputV,getframe(gcf))
-close(outputV)
+% writeVideo(outputV,getframe(gcf))
+% close(outputV)
 
 
 disp('END')

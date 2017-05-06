@@ -6,7 +6,7 @@ txtFileName="${fn/cpev/cpev.txt}"
 echo $txtFileName
 python parser.py $txtFileName
 
-loadName="${fn/cpev/csv}"
+loadName="${fn/.cpev/}"
 matName="${fn/cpev/mat}"
 echo "Making" $matName
 /usr/local/MATLAB/R2017a/bin/matlab \
