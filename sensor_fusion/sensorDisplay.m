@@ -150,7 +150,7 @@ for frame=1:step:(m/16)
     r = rotm2eul(r);
     r = rad2deg(r(1));
     rotarr = [rotarr;r];
-    % if frame >1140
+    % if frame >556
     %     waitforbuttonpress;
     %     % break
     % end
@@ -169,7 +169,7 @@ r = rotarr-rotarr(1);
 plot(1:5:m/16,r)
 hold on
 plot(imuang)
-xlim([500 550]);
+% xlim([500 550]);
 legend('GPS','ICP (LiDAR)','IMU')
 xlabel('Frames')
 ylabel('Angle (degrees)')
@@ -179,7 +179,7 @@ figure
 gpsdeg = gpsdir(16:15:end)-gpsdir(1:15:end-15);
 icpdeg = r(4:3:end)-r(1:3:end-3);
 imudeg = imuang(16:15:end)-imuang(1:15:end-15);
-plot(1:15:15*123,gpsdeg,1:15:15*123,imudeg,1:15:15*123,icpdeg)
+plot(1:15:15*length(gpsdeg),gpsdeg,1:15:15*length(imudeg),imudeg,1:15:15*length(icpdeg),icpdeg)
 legend('GPS','IMU','ICP')
 title('Angular Velocity')
 xlabel('Frames')
@@ -195,7 +195,7 @@ for i=2:length(d1)
         d1(i:end)=d1(i:end)+360;
     end
 end
-plot(1:5:5*length(d1),d1)
+plot(6:5:5*length(d1)+5,d1)
 title('ICP Direction (Modified)')
 xlabel('Frames')
 ylabel('(Degrees)')
@@ -204,12 +204,45 @@ xlim([-100 2000])
 figure
 d2 = d1-65;
 plot(1:3:m/16,gpsdir(1:3:end))
+hold on
 plot(imuang)
-plot(1:5:5*length(d2),d2) 
+hold on
+plot(6:5:5*length(d2)+5,d2) 
 xlim([-100 2000])
 title('Direction (Modified)')
 xlabel('Frames')
 ylabel('(Degrees)')
+
+figure
+d3 = d2(2:end)-d2(1:end-1);
+plot(11:5:5*length(d3)+10,d3)
+title('Angular velocity -- ICP')
+xlabel('Frames')                
+ylabel('Degrees') 
+
+figure
+g1=interp1(1:3:m/16,gpsdir(1:3:end),1:m/16);
+g2=g1(6:5:end)-g1(1:5:end-5);
+i2=imuang(6:5:end)-imuang(1:5:end-5);
+plot(6:5:5*length(g2)+5,g2)
+hold on
+plot(6:5:5*length(i2)+5,i2)
+title('Angular velocity -- GPS & IMU')
+legend('GPS','IMU','Location','southeast')
+xlabel('Frames')
+ylabel('Degrees')
+
+figure
+plot(6:5:5*length(g2)+5,g2)
+hold on
+plot(6:5:5*length(i2)+5,i2)
+hold on
+plot(11:5:5*length(d3)+10,d3)
+title('Angular velocity -- GPS, IMU & ICP')
+legend('GPS','IMU','ICP','Location','southeast')
+xlabel('Frames')
+ylabel('Degrees')
+
 
 disp('END')
 cd ~/Dropbox/study/Project/sensor_fusion
