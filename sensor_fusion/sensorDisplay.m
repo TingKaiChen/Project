@@ -14,9 +14,14 @@ hold on
 
 % Load in data of wall point cloud and trajectory
 load('wallcloud.mat')
+load('141303.mat')
+trajpoint = traj_data;
+
+scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',3)
+scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor','g','SizeData',5)
 
 % Load in LiDAR data
-load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_10_17.mat')
+load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_14_13_03.mat')
 
 step = 5;
 dr = 1.0;
@@ -34,8 +39,8 @@ bfd1 = [];
 wc_U = wallcloud;
 wc_update=[];
 traj_data=[];
-scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',3)
-scatter(trajectory(1,:),trajectory(2,:),'filled','MarkerFaceColor','g','SizeData',5)
+td = [];
+
 
 it = 1;
 for frame=1:step:(m/16)
@@ -93,16 +98,66 @@ for frame=1:step:(m/16)
     initPos = trajd1;
     wc_U = [wc_U wc_update];
 
-    afd1(1:2,:)=initRot*afd1(1:2,:)+initPos*ones(1,size(afd1(1:2,:),2));
-    [TRd1,TTd1]=icp(wc_U,afd1,iter,'Matching','kDtree','WorstRejection',wr);
+    afd1tmp = afd1;
+    afd1tmp(1:2,:)=initRot*afd1tmp(1:2,:)+initPos*ones(1,size(afd1tmp(1:2,:),2));
+    [TRd1,TTd1]=icp(wc_U,afd1tmp,iter,'Matching','kDtree','WorstRejection',wr);
     rotd1 = TRd1(1:2,1:2)*initRot;
     trajd1 = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
-    afd1(1:2,:)=TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1(1:2,:),2));
-    [TRd1,TTd1,p_indxd1,q_indxd1]=icpMatch(wc_U,afd1,iter,'Matching','kDtree',...
+    afd1tmp(1:2,:)=TRd1(1:2,1:2)*afd1tmp(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1tmp(1:2,:),2));
+    [TRd1,TTd1,p_indxd1,q_indxd1]=icpMatch(wc_U,afd1tmp,iter,'Matching','kDtree',...
         'WorstRejection',dr,'UnmatchDistance',0.5);
     rotd1 = TRd1(1:2,1:2)*rotd1;
     trajd1 = TRd1(1:2,1:2)*trajd1+TTd1(1:2,1);
-    afd1(1:2,:)=TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1(1:2,:),2));
+    afd1tmp(1:2,:)=TRd1(1:2,1:2)*afd1tmp(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1tmp(1:2,:),2));
+    tjd1= trajd1;
+
+
+    % Prevent perturbation
+    if it>1
+        trajvec = trajd1-traj0; % Moving vector
+        disp('before')
+        disp(trajvec)
+        [d,v] = cart2pol(trajvec(1),trajvec(2));
+        trajdeg = rad2deg(d)+offset;
+        % Handle jumping degree near 0 and 360 degree
+        if it == 2
+            d0 = trajdeg;
+        elseif it > 2 & trajdeg-d0>300
+            trajdeg = trajdeg-360;
+            offset = offset-360;
+        elseif it > 2 & trajdeg-d0<-300
+            trajdeg = trajdeg+360;
+            offset = offset+360;
+        end 
+        % Find perturbation
+        if it > 2 & abs(trajdeg-d0) > 45 & it > 80 
+            disp(frame)
+            disp(it)
+            sprintf('angle: %f %f',trajdeg,d0)
+
+            % rotTrue = eul2rotm(deg2rad([imuang(frame) 0 0]));
+            degdiff = imuang(frame)-imuang(frame-1);
+            degdiff = eul2rotm(deg2rad([degdiff 0 0]));
+            initPos = degdiff(1:2,1:2)*movVec*0.7+initPos;
+            trajd1 = initPos;
+            trajvec = trajd1-traj0; % Moving vector
+            disp('after')
+            disp(trajvec)
+            trajdeg = rotm2eul([initRot*degdiff(1:2,1:2) [0;0];0 0 1]);
+            trajdeg = rad2deg(trajdeg(1))+90;
+            disp(trajdeg)
+            afd1(1:2,:)=initRot*degdiff(1:2,1:2)*afd1(1:2,:)+initPos*ones(1,size(afd1(1:2,:),2));
+        else
+            afd1 = afd1tmp;
+        end
+        movVec = trajvec;
+        traj0 = trajd1;
+        d0 = trajdeg;
+        td = [td;trajdeg];
+    else
+        traj0 = trajd1;
+        offset = 0;
+    end
 
     % Update map
     p = afd1(:,p_indxd1);
@@ -128,9 +183,11 @@ for frame=1:step:(m/16)
 
     % Trajectory
     scatter(trajd1(1,:),trajd1(2,:),'filled','MarkerFaceColor',trajcolor,'SizeData',4)
+    t = scatter(trajpoint(1,it),trajpoint(2,it),'filled','MarkerFaceColor','k','SizeData',4);
+    t1 = scatter(tjd1(1),tjd1(2),'filled','MarkerFaceColor','y','SizeData',4);
 
-    disp(frame)
-    disp(it)
+    % disp(frame)
+    % disp(it)
 
     xlim([0 size(A,2)/10])
     ylim([0 size(A,1)/10])
@@ -138,6 +195,12 @@ for frame=1:step:(m/16)
     % disp(frame)
     drawnow
 
+    r = [rotd1 [0;0];0 0 1];
+    r = rotm2eul(r);
+    r = rad2deg(r(1));
+    rotarr = [rotarr;r];
+
+    
 
     traj_data = [traj_data trajd1];
     it = it+1;
@@ -146,18 +209,15 @@ for frame=1:step:(m/16)
     bfd1 = afd1;
     bfd2 = afd2;
 
-    r = [rotd1 [0;0];0 0 1];
-    r = rotm2eul(r);
-    r = rad2deg(r(1));
-    rotarr = [rotarr;r];
-    % if frame >556
+    % if frame >510
     %     waitforbuttonpress;
     %     % break
     % end
     delete(wall)
     delete(line1)
     delete(line2)
-
+    delete(t)
+    delete(t1)
 end
 % Save the wall point cloud
 % save('wallcloud.mat','wallcloud','trajectory')

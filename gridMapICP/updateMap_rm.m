@@ -19,7 +19,7 @@ load('wallcloud.mat')
 load('./trajectory/traj_add_101017.mat')
 
 % Load in LiDAR data
-load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_10_17.mat')
+load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_15_06_04.mat')
 
 %Video
 % outputV = VideoWriter('../figure/rm_101017_rad15');
@@ -42,7 +42,8 @@ wc_U = wc;
 wc_update=[];
 wc_remove=[];
 % scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',3)
-scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor','g','SizeData',10)
+% scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor','g','SizeData',10)
+scatter(trajectory(1,:),trajectory(2,:),'filled','MarkerFaceColor','g','SizeData',10)
 
 it = 1;
 for frame=1:step:(m/16)
