@@ -125,7 +125,7 @@ for frame=1:step:(m/16)
     wc_update=[wc_update p];
     
     hold on
-    scatter(wc_update(1,:),wc_update(2,:),'filled','MarkerFaceColor','c','SizeData',3);
+    % scatter(wc_update(1,:),wc_update(2,:),'filled','MarkerFaceColor','c','SizeData',3);
     hold on
     wall=scatter(afd1(1,:),afd1(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3);
     hold on
@@ -145,11 +145,11 @@ for frame=1:step:(m/16)
     % Trajectory
     scatter(trajd1(1,:),trajd1(2,:),'filled','MarkerFaceColor',trajcolor,'SizeData',4)
 
-    % xlim([0 size(A,2)/10])
-    % ylim([0 size(A,1)/10])
-    % axis equal
-    xlim([30 70])
-    ylim([0 45])
+    xlim([0 size(A,2)/10])
+    ylim([0 size(A,1)/10])
+    axis equal
+    % xlim([30 70])
+    % ylim([0 45])
     disp(frame)
     drawnow
 
