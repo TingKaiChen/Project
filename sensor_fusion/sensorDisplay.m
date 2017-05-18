@@ -26,6 +26,8 @@ load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_14_13_03.mat')
 step = 5;
 dr = 1.0;
 wr = 0.1;
+ud = 0.5;
+backCheck = false;
 
 % Initial pose
 rotarr = [];
@@ -43,7 +45,11 @@ td = [];
 
 
 it = 1;
-for frame=1:step:(m/16)
+frame = 1;
+backframe = 0;
+rp = 0;
+while frame <= m/16
+    disp(frame)
     iter = 20;
     if frame~=m/16
         while xd1(frame, 1)==0
@@ -101,22 +107,22 @@ for frame=1:step:(m/16)
     afd1tmp = afd1;
     afd1tmp(1:2,:)=initRot*afd1tmp(1:2,:)+initPos*ones(1,size(afd1tmp(1:2,:),2));
     [TRd1,TTd1]=icp(wc_U,afd1tmp,iter,'Matching','kDtree','WorstRejection',wr);
-    rotd1 = TRd1(1:2,1:2)*initRot;
-    trajd1 = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
+    initRot = TRd1(1:2,1:2)*initRot;
+    initPos = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
     afd1tmp(1:2,:)=TRd1(1:2,1:2)*afd1tmp(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1tmp(1:2,:),2));
     [TRd1,TTd1,p_indxd1,q_indxd1]=icpMatch(wc_U,afd1tmp,iter,'Matching','kDtree',...
-        'WorstRejection',dr,'UnmatchDistance',0.5);
-    rotd1 = TRd1(1:2,1:2)*rotd1;
-    trajd1 = TRd1(1:2,1:2)*trajd1+TTd1(1:2,1);
+        'WorstRejection',dr,'UnmatchDistance',ud);
+    initRot = TRd1(1:2,1:2)*initRot;
+    initPos = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
     afd1tmp(1:2,:)=TRd1(1:2,1:2)*afd1tmp(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1tmp(1:2,:),2));
-    tjd1= trajd1;
+    tjd1= initPos;
 
 
     % Prevent perturbation
-    if it>1
-        trajvec = trajd1-traj0; % Moving vector
-        disp('before')
-        disp(trajvec)
+    if it>1 & backCheck == false;
+        trajvec = initPos-traj0; % Moving vector
+        % disp('before')
+        % disp(trajvec)
         [d,v] = cart2pol(trajvec(1),trajvec(2));
         trajdeg = rad2deg(d)+offset;
         % Handle jumping degree near 0 and 360 degree
@@ -131,33 +137,40 @@ for frame=1:step:(m/16)
         end 
         % Find perturbation
         if it > 2 & abs(trajdeg-d0) > 45 & it > 80 
-            disp(frame)
-            disp(it)
-            sprintf('angle: %f %f',trajdeg,d0)
+            % disp(frame)
+            % disp(it)
+            sprintf('angle: %f %f\n',trajdeg,d0)
 
-            % rotTrue = eul2rotm(deg2rad([imuang(frame) 0 0]));
-            degdiff = imuang(frame)-imuang(frame-1);
-            degdiff = eul2rotm(deg2rad([degdiff 0 0]));
-            initPos = degdiff(1:2,1:2)*movVec*0.7+initPos;
-            trajd1 = initPos;
-            trajvec = trajd1-traj0; % Moving vector
-            disp('after')
-            disp(trajvec)
-            trajdeg = rotm2eul([initRot*degdiff(1:2,1:2) [0;0];0 0 1]);
-            trajdeg = rad2deg(trajdeg(1))+90;
-            disp(trajdeg)
-            afd1(1:2,:)=initRot*degdiff(1:2,1:2)*afd1(1:2,:)+initPos*ones(1,size(afd1(1:2,:),2));
+            if rp ~= frame
+                rp = frame;
+                backCheck = true;
+                step = 1;
+                ud = 0.1;
+                backframe = frame;
+                frame = preframe+1;
+                continue;
+            end
         else
             afd1 = afd1tmp;
         end
+
         movVec = trajvec;
-        traj0 = trajd1;
+        traj0 = initPos;
         d0 = trajdeg;
         td = [td;trajdeg];
+    elseif frame == backframe
+        step = 5;
+        ud = 0.5;
+        backCheck = false;
+        preframe = frame-step;
+        continue;
     else
-        traj0 = trajd1;
+        traj0 = initPos;
         offset = 0;
     end
+    rotd1 = initRot;
+    trajd1 = initPos;
+    afd1 = afd1tmp;
 
     % Update map
     p = afd1(:,p_indxd1);
@@ -168,6 +181,10 @@ for frame=1:step:(m/16)
     hold on
     wall=scatter(afd1(1,:),afd1(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3);
     hold on
+    % if backCheck==true
+    %     sprintf('update #: %d',sum(p_indxd1))
+    %     us=scatter(p(1,:),p(2,:),'filled','MarkerFaceColor','k','SizeData',10);
+    % end
     
     % Angle of view
     maxDist = max(max(v1_a),max(v2_a));
@@ -183,7 +200,7 @@ for frame=1:step:(m/16)
 
     % Trajectory
     scatter(trajd1(1,:),trajd1(2,:),'filled','MarkerFaceColor',trajcolor,'SizeData',4)
-    t = scatter(trajpoint(1,it),trajpoint(2,it),'filled','MarkerFaceColor','k','SizeData',4);
+    % t = scatter(trajpoint(1,it),trajpoint(2,it),'filled','MarkerFaceColor','k','SizeData',4);
     t1 = scatter(tjd1(1),tjd1(2),'filled','MarkerFaceColor','y','SizeData',4);
 
     % disp(frame)
@@ -208,6 +225,7 @@ for frame=1:step:(m/16)
     bf = af;
     bfd1 = afd1;
     bfd2 = afd2;
+    frame = frame+step;
 
     % if frame >510
     %     waitforbuttonpress;
@@ -216,92 +234,95 @@ for frame=1:step:(m/16)
     delete(wall)
     delete(line1)
     delete(line2)
-    delete(t)
+    % delete(t)
     delete(t1)
+    % if backCheck == true
+    %     delete(us)
+    % end
 end
 % Save the wall point cloud
 % save('wallcloud.mat','wallcloud','trajectory')
 
-figure
-plot(1:3:m/16,gpsdir(1:3:end))
-hold on
-r = rotarr-rotarr(1);
-plot(1:5:m/16,r)
-hold on
-plot(imuang)
-% xlim([500 550]);
-legend('GPS','ICP (LiDAR)','IMU')
-xlabel('Frames')
-ylabel('Angle (degrees)')
-title('Direction')
+% figure
+% plot(1:3:m/16,gpsdir(1:3:end))
+% hold on
+% r = rotarr-rotarr(1);
+% plot(1:5:m/16,r)
+% hold on
+% plot(imuang)
+% % xlim([500 550]);
+% legend('GPS','ICP (LiDAR)','IMU')
+% xlabel('Frames')
+% ylabel('Angle (degrees)')
+% title('Direction')
 
-figure
-gpsdeg = gpsdir(16:15:end)-gpsdir(1:15:end-15);
-icpdeg = r(4:3:end)-r(1:3:end-3);
-imudeg = imuang(16:15:end)-imuang(1:15:end-15);
-plot(1:15:15*length(gpsdeg),gpsdeg,1:15:15*length(imudeg),imudeg,1:15:15*length(icpdeg),icpdeg)
-legend('GPS','IMU','ICP')
-title('Angular Velocity')
-xlabel('Frames')
+% figure
+% gpsdeg = gpsdir(16:15:end)-gpsdir(1:15:end-15);
+% icpdeg = r(4:3:end)-r(1:3:end-3);
+% imudeg = imuang(16:15:end)-imuang(1:15:end-15);
+% plot(1:15:15*length(gpsdeg),gpsdeg,1:15:15*length(imudeg),imudeg,1:15:15*length(icpdeg),icpdeg)
+% legend('GPS','IMU','ICP')
+% title('Angular Velocity')
+% xlabel('Frames')
 
-figure
-rt = traj_data(:,2:end)-traj_data(:,1:end-1);
-[d,v]=cart2pol(rt(1,:),rt(2,:));
-d1 = rad2deg(d);
-for i=2:length(d1)
-    if d1(i)-d1(i-1)>300
-        d1(i:end)=d1(i:end)-360;
-    elseif d1(i)-d1(i-1)<-300
-        d1(i:end)=d1(i:end)+360;
-    end
-end
-plot(6:5:5*length(d1)+5,d1)
-title('ICP Direction (Modified)')
-xlabel('Frames')
-ylabel('(Degrees)')
-xlim([-100 2000])
+% figure
+% rt = traj_data(:,2:end)-traj_data(:,1:end-1);
+% [d,v]=cart2pol(rt(1,:),rt(2,:));
+% d1 = rad2deg(d);
+% for i=2:length(d1)
+%     if d1(i)-d1(i-1)>300
+%         d1(i:end)=d1(i:end)-360;
+%     elseif d1(i)-d1(i-1)<-300
+%         d1(i:end)=d1(i:end)+360;
+%     end
+% end
+% plot(6:5:5*length(d1)+5,d1)
+% title('ICP Direction (Modified)')
+% xlabel('Frames')
+% ylabel('(Degrees)')
+% xlim([-100 2000])
 
-figure
-d2 = d1-65;
-plot(1:3:m/16,gpsdir(1:3:end))
-hold on
-plot(imuang)
-hold on
-plot(6:5:5*length(d2)+5,d2) 
-xlim([-100 2000])
-title('Direction (Modified)')
-xlabel('Frames')
-ylabel('(Degrees)')
+% figure
+% d2 = d1-65;
+% plot(1:3:m/16,gpsdir(1:3:end))
+% hold on
+% plot(imuang)
+% hold on
+% plot(6:5:5*length(d2)+5,d2) 
+% xlim([-100 2000])
+% title('Direction (Modified)')
+% xlabel('Frames')
+% ylabel('(Degrees)')
 
-figure
-d3 = d2(2:end)-d2(1:end-1);
-plot(11:5:5*length(d3)+10,d3)
-title('Angular velocity -- ICP')
-xlabel('Frames')                
-ylabel('Degrees') 
+% figure
+% d3 = d2(2:end)-d2(1:end-1);
+% plot(11:5:5*length(d3)+10,d3)
+% title('Angular velocity -- ICP')
+% xlabel('Frames')                
+% ylabel('Degrees') 
 
-figure
-g1=interp1(1:3:m/16,gpsdir(1:3:end),1:m/16);
-g2=g1(6:5:end)-g1(1:5:end-5);
-i2=imuang(6:5:end)-imuang(1:5:end-5);
-plot(6:5:5*length(g2)+5,g2)
-hold on
-plot(6:5:5*length(i2)+5,i2)
-title('Angular velocity -- GPS & IMU')
-legend('GPS','IMU','Location','southeast')
-xlabel('Frames')
-ylabel('Degrees')
+% figure
+% g1=interp1(1:3:m/16,gpsdir(1:3:end),1:m/16);
+% g2=g1(6:5:end)-g1(1:5:end-5);
+% i2=imuang(6:5:end)-imuang(1:5:end-5);
+% plot(6:5:5*length(g2)+5,g2)
+% hold on
+% plot(6:5:5*length(i2)+5,i2)
+% title('Angular velocity -- GPS & IMU')
+% legend('GPS','IMU','Location','southeast')
+% xlabel('Frames')
+% ylabel('Degrees')
 
-figure
-plot(6:5:5*length(g2)+5,g2)
-hold on
-plot(6:5:5*length(i2)+5,i2)
-hold on
-plot(11:5:5*length(d3)+10,d3)
-title('Angular velocity -- GPS, IMU & ICP')
-legend('GPS','IMU','ICP','Location','southeast')
-xlabel('Frames')
-ylabel('Degrees')
+% figure
+% plot(6:5:5*length(g2)+5,g2)
+% hold on
+% plot(6:5:5*length(i2)+5,i2)
+% hold on
+% plot(11:5:5*length(d3)+10,d3)
+% title('Angular velocity -- GPS, IMU & ICP')
+% legend('GPS','IMU','ICP','Location','southeast')
+% xlabel('Frames')
+% ylabel('Degrees')
 
 
 disp('END')
