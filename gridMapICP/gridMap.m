@@ -1,6 +1,7 @@
 clc
 clear
 % Show the digital map
+figure
 A = imread('../Real_Map/utmMap.png');
 % Grayscale
 A(:,:,1)=A(:,:,2);
@@ -16,10 +17,14 @@ hold on
 load('wallcloud.mat')
 
 % Load in the trajectory of "add-only" strategy
-load('./trajectory/traj_add_150221.mat')
+load('./trajectory/traj_grid_101017.mat')
+
+% Show global map and trajectory
+scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',3)
+scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor','g','SizeData',10)
 
 % Load in LiDAR data
-load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_15_02_21.mat')
+load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_10_17.mat')
 
 step = 5;
 dr = 1.0;
@@ -34,9 +39,9 @@ trajcolor = 'm';
 bfd1 = [];
 % wc = [wallcloud;zeros(1,size(wallcloud,2))];
 wc_U = round(wallcloud*10)/10;
+% wc_U = wallcloud;
 wc_update=[];
-scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',3)
-scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor','g','SizeData',10)
+traj_data=[];
 
 it = 1;
 for frame=1:step:(m/16)
@@ -102,6 +107,7 @@ for frame=1:step:(m/16)
     initRot = rotd1;
     initPos = trajd1;
     wc_U = [wc_U round(wc_update*10)/10];
+    % wc_U = [wc_U wc_update];
 
     afd1(1:2,:)=initRot*afd1(1:2,:)+initPos*ones(1,size(afd1(1:2,:),2));
     [TRd1,TTd1]=icp(wc_U,afd1,iter,'Matching','kDtree','WorstRejection',wr);
@@ -139,10 +145,12 @@ for frame=1:step:(m/16)
     % Trajectory
     scatter(trajd1(1,:),trajd1(2,:),'filled','MarkerFaceColor',trajcolor,'SizeData',4)
 
-    xlim([0 size(A,2)/10])
-    ylim([0 size(A,1)/10])
-    axis equal
-    % disp(frame)
+    % xlim([0 size(A,2)/10])
+    % ylim([0 size(A,1)/10])
+    % axis equal
+    xlim([30 70])
+    ylim([0 45])
+    disp(frame)
     drawnow
 
 
@@ -152,10 +160,10 @@ for frame=1:step:(m/16)
     bf = af;
     bfd1 = afd1;
     bfd2 = afd2;
-    % if frame >1
-    %     break
-    % end
-    % waitforbuttonpress;
+    if frame >500
+        waitforbuttonpress;
+        % break
+    end
     delete(wall)
     delete(line1)
     delete(line2)

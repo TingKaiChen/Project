@@ -16,7 +16,7 @@ hold on
 load('wallcloud.mat')
 
 % Load in LiDAR data
-load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_10_17.mat')
+load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_15_06_04.mat')
 
 step = 5;
 dr = 1.0;
