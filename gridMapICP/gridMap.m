@@ -15,16 +15,18 @@ hold on
 
 % Load in data of wall point cloud and trajectory
 load('wallcloud.mat')
+% Load in dilated wall cloud
+load('wallcloud_dilation.mat')
 
 % Load in the trajectory of "add-only" strategy
-load('./trajectory/traj_grid_101017.mat')
+load('./trajectory/traj_grid_150604.mat')
 
 % Show global map and trajectory
 scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',3)
 scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor','g','SizeData',10)
 
 % Load in LiDAR data
-load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_10_17.mat')
+load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_15_06_04.mat')
 
 step = 5;
 dr = 1.0;
@@ -37,9 +39,8 @@ trajd1 = [35.2;46.1];
 wallcolor = 'r';
 trajcolor = 'm';
 bfd1 = [];
-% wc = [wallcloud;zeros(1,size(wallcloud,2))];
-wc_U = round(wallcloud*10)/10;
-% wc_U = wallcloud;
+wc_U = round(wallcloud*10)/10;  % Updated grid map
+wc = round(wallcloud*10)/10;    % Original grid map
 wc_update=[];
 traj_data=[];
 
@@ -106,26 +107,53 @@ for frame=1:step:(m/16)
     %% Original initial
     initRot = rotd1;
     initPos = trajd1;
+    afd1tmp = afd1;
     wc_U = [wc_U round(wc_update*10)/10];
-    % wc_U = [wc_U wc_update];
 
-    afd1(1:2,:)=initRot*afd1(1:2,:)+initPos*ones(1,size(afd1(1:2,:),2));
-    [TRd1,TTd1]=icp(wc_U,afd1,iter,'Matching','kDtree','WorstRejection',wr);
-    rotd1 = TRd1(1:2,1:2)*initRot;
-    trajd1 = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
-    afd1(1:2,:)=TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1(1:2,:),2));
-    [TRd1,TTd1,p_indxd1,q_indxd1]=icpMatch(wc_U,afd1,iter,'Matching','kDtree',...
+    afd1tmp(1:2,:)=initRot*afd1(1:2,:)+initPos*ones(1,size(afd1(1:2,:),2));
+    [TRd1,TTd1]=icp(wc_U,afd1tmp,iter,'Matching','kDtree','WorstRejection',wr);
+    initRot = TRd1(1:2,1:2)*initRot;
+    initPos = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
+    afd1tmp(1:2,:)=TRd1(1:2,1:2)*afd1tmp(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1tmp(1:2,:),2));
+    [TRd1,TTd1,p_indxd1,q_indxd1]=icpMatch(wc_U,afd1tmp,iter,'Matching','kDtree',...
         'WorstRejection',dr,'UnmatchDistance',0.5);
-    rotd1 = TRd1(1:2,1:2)*rotd1;
-    trajd1 = TRd1(1:2,1:2)*trajd1+TTd1(1:2,1);
+    initRot = TRd1(1:2,1:2)*initRot;
+    initPos = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
+    afd1tmp(1:2,:)=TRd1(1:2,1:2)*afd1tmp(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1tmp(1:2,:),2));
+
+    %% 1st Moving point filter
+    colid = ismembertol(round(afd1tmp'*10)/10,wc_dil','ByRows',true)';
+    movpoints = afd1(:,~colid);
+    stapoints = afd1(:,colid);
+    %% 2nd ICP
+    initRot = rotd1;
+    initPos = trajd1;
+    afd1tmp = stapoints;
+
+    afd1tmp(1:2,:)=initRot*afd1tmp(1:2,:)+initPos*ones(1,size(afd1tmp(1:2,:),2));
+    afd1(1:2,:)=initRot*afd1(1:2,:)+initPos*ones(1,size(afd1(1:2,:),2));
+    [TRd1,TTd1]=icp(wc_U,afd1tmp,iter,'Matching','kDtree','WorstRejection',wr);
+    initRot = TRd1(1:2,1:2)*initRot;
+    initPos = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
+    afd1tmp(1:2,:)=TRd1(1:2,1:2)*afd1tmp(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1tmp(1:2,:),2));
     afd1(1:2,:)=TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1(1:2,:),2));
+    [TRd1,TTd1,p_indxd1,q_indxd1]=icpMatch(wc_U,afd1tmp,iter,'Matching','kDtree',...
+        'WorstRejection',dr,'UnmatchDistance',0.5);
+    initRot = TRd1(1:2,1:2)*initRot;
+    initPos = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
+
+    afd1(1:2,:)=TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1(1:2,:),2));
+    rotd1 = initRot;
+    trajd1 = initPos;
+    %% 2nd Moving point filter
+    colid = ismembertol(round(afd1'*10)/10,wc_dil','ByRows',true)';
+    movpoints = afd1(:,~colid);
 
     % Update map
-    p = afd1(:,p_indxd1);
-    wc_update=[wc_update p];
+    wc_update=[wc_update movpoints];
     
     hold on
-    % scatter(wc_update(1,:),wc_update(2,:),'filled','MarkerFaceColor','c','SizeData',3);
+    scatter(wc_update(1,:),wc_update(2,:),'filled','MarkerFaceColor','c','SizeData',3);
     hold on
     wall=scatter(afd1(1,:),afd1(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3);
     hold on
@@ -148,8 +176,6 @@ for frame=1:step:(m/16)
     xlim([0 size(A,2)/10])
     ylim([0 size(A,1)/10])
     axis equal
-    % xlim([30 70])
-    % ylim([0 45])
     disp(frame)
     drawnow
 
@@ -160,10 +186,10 @@ for frame=1:step:(m/16)
     bf = af;
     bfd1 = afd1;
     bfd2 = afd2;
-    if frame >500
-        waitforbuttonpress;
-        % break
-    end
+    % if frame >730
+    %     waitforbuttonpress;
+    %     % break
+    % end
     delete(wall)
     delete(line1)
     delete(line2)
