@@ -132,12 +132,12 @@ for frame=1:step:(m/16)
 
     afd1tmp(1:2,:)=initRot*afd1tmp(1:2,:)+initPos*ones(1,size(afd1tmp(1:2,:),2));
     afd1(1:2,:)=initRot*afd1(1:2,:)+initPos*ones(1,size(afd1(1:2,:),2));
-    [TRd1,TTd1]=icp(wc_U,afd1tmp,iter,'Matching','kDtree','WorstRejection',wr);
+    [TRd1,TTd1]=icp(wc,afd1tmp,iter,'Matching','kDtree','WorstRejection',wr);
     initRot = TRd1(1:2,1:2)*initRot;
     initPos = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
     afd1tmp(1:2,:)=TRd1(1:2,1:2)*afd1tmp(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1tmp(1:2,:),2));
     afd1(1:2,:)=TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1(1:2,:),2));
-    [TRd1,TTd1,p_indxd1,q_indxd1]=icpMatch(wc_U,afd1tmp,iter,'Matching','kDtree',...
+    [TRd1,TTd1,p_indxd1,q_indxd1]=icpMatch(wc,afd1tmp,iter,'Matching','kDtree',...
         'WorstRejection',dr,'UnmatchDistance',0.5);
     initRot = TRd1(1:2,1:2)*initRot;
     initPos = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
