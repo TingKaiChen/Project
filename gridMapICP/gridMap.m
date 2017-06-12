@@ -1,5 +1,5 @@
 clc
-clear
+% clear
 % Show the digital map
 figure
 A = imread('../Real_Map/utmMap.png');
@@ -19,23 +19,24 @@ load('wallcloud.mat')
 load('wallcloud_dilation.mat')
 
 % Load in the trajectory of "add-only" strategy
-load('./trajectory/traj_grid_150604.mat')
+% load('./trajectory/traj_grid_150604.mat')
 
 % Show global map and trajectory
 scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',3)
-scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor','g','SizeData',10)
+% scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor','g','SizeData',10)
 
 % Load in LiDAR data
-load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_15_06_04.mat')
+load(fn)
 
 step = 5;
 dr = 1.0;
 wr = 0.1;
 
 % Initial pose
-rotd1 = eul2rotm([deg2rad(-3.6),0,0]);
+rotd1 = eul2rotm([deg2rad(-70),0,0]);
 rotd1 = rotd1(1:2,1:2);
-trajd1 = [35.2;46.1];
+% trajd1 = [35.2;46.1];
+trajd1 = [75;29];
 wallcolor = 'r';
 trajcolor = 'm';
 bfd1 = [];
@@ -197,6 +198,8 @@ for frame=1:step:(m/16)
 end
 % Save the wall point cloud
 % save('wallcloud.mat','wallcloud','trajectory')
+save(savename(nameit,1:end),'wallcloud','traj_data')
+
 
 
 disp('END')

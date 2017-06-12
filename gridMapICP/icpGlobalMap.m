@@ -13,8 +13,10 @@ axis equal
 hold on
 
 % Read in CSV file and seperate the data
+csvfilename='../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_39_37.csv';
+mapfilename='./globalmap/wallcloud_0801103937.mat';
 % cd ~/Dropbox/study/Project/icp
-data = csvread('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_10_39_37.csv');
+data = csvread(csvfilename);
 [m, n] = size(data);
 degmat = data(1:2:m, :);
 val1 = data(2:16:m, :);
@@ -160,7 +162,7 @@ for frame=1:step:(m/16)
 
 end
 % Save the wall point cloud
-save('wallcloud.mat','wallcloud','trajectory')
+save(mapfilename,'wallcloud','trajectory')
 
 
 disp('END')
