@@ -26,12 +26,15 @@ scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',
 % scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor','g','SizeData',10)
 
 % Load in LiDAR data
-load('../read CPEV data/CPEV160726/CPEV_Record_2016_07_26_14_32_16.mat')
+load('../read CPEV data/CPEV160728/CPEV_Record_2016_07_28_14_14_36.mat')
 
 step = 5;
 dr = 1.0;
 wr = 0.1;
+iter = 45;
 visible = true;
+size_fit = true;
+frame_pause = -1;
 
 % Initial pose
 rotd1 = eul2rotm([deg2rad(0),0,0]);
@@ -40,6 +43,7 @@ rotd1 = eul2rotm([deg2rad(0),0,0]);
 % rotd1 = eul2rotm([deg2rad(-100),0,0]);  % 0726142910
 rotd1 = rotd1(1:2,1:2);
 trajd1 = [35.2;46.1];
+% trajd1 = [75;45];       % 0728142047
 % trajd1 = [37.2;46.1];   % 0726142826
 % trajd1 = [75;29];   
 % trajd1 = [75;31];       % 0726144311
@@ -59,7 +63,6 @@ ptnum=[];
 it = 1;
 t_all = tic;
 for frame=1:step:(m/16)
-    iter = 20;
     if frame~=m/16
         while xd1(frame, 1)==0
             frame = frame+1;
@@ -216,18 +219,20 @@ for frame=1:step:(m/16)
         % Trajectory
         scatter(trajd1(1,:),trajd1(2,:),'filled','MarkerFaceColor',trajcolor,'SizeData',4);
 
-        % xlim([0 size(A,2)/10])
-        % ylim([0 size(A,1)/10])
+        if size_fit
+            xlim([0 size(A,2)/10])
+            ylim([0 size(A,1)/10])
+        end
         axis equal
         drawnow
     end
     disp(frame)
     t_9=toc;
 
-    % if frame >730
-    %     waitforbuttonpress;
-    %     % break
-    % end
+    if frame >= frame_pause & frame_pause > 0
+        waitforbuttonpress;
+        % break
+    end
     tic
     delete(wall)
     delete(line1)
