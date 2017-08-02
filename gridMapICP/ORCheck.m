@@ -26,12 +26,12 @@ scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',
 % scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor','g','SizeData',10)
 
 % Load in LiDAR data
-load('../read CPEV data/CPEV160728/CPEV_Record_2016_07_28_14_14_36.mat')
+load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_14_53_10.mat')
 
 step = 5;
 dr = 1.0;
 wr = 0.1;
-iter = 50;
+iter = 20;
 visible = false;
 size_fit = true;
 axis_eq = false;
@@ -162,17 +162,56 @@ for frame=1:step:(m/16)
     tic
     afd1tmp(1:2,:)=initRot*afd1tmp(1:2,:)+initPos*ones(1,size(afd1tmp(1:2,:),2));
     afd1(1:2,:)=initRot*afd1(1:2,:)+initPos*ones(1,size(afd1(1:2,:),2));
-    [TRd1,TTd1]=icp(wc,afd1tmp,iter,'Matching','kDtree','WorstRejection',wr);
-    initRot = TRd1(1:2,1:2)*initRot;
-    initPos = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
-    afd1tmp(1:2,:)=TRd1(1:2,1:2)*afd1tmp(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1tmp(1:2,:),2));
-    afd1(1:2,:)=TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1(1:2,:),2));
-    [TRd1,TTd1,p_indxd1,q_indxd1]=icpMatch(wc,afd1tmp,iter,'Matching','kDtree',...
-        'WorstRejection',dr,'UnmatchDistance',0.5);
-    initRot = TRd1(1:2,1:2)*initRot;
-    initPos = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
+    converge = false;
+    update_map = true;
+    iter_tmp = iter;
+    i = 0;
+    while ~converge & i<4
+        [TRd1,TTd1]=icp(wc,afd1tmp,iter_tmp,'Matching','kDtree','WorstRejection',wr);
+        initRot = TRd1(1:2,1:2)*initRot;
+        initPos = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
+        afd1tmp(1:2,:)=TRd1(1:2,1:2)*afd1tmp(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1tmp(1:2,:),2));
+        afd1(1:2,:)=TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1(1:2,:),2));
+        [TRd1,TTd1,p_indxd1,q_indxd1]=icpMatch(wc,afd1tmp,iter_tmp,'Matching','kDtree',...
+            'WorstRejection',dr,'UnmatchDistance',0.5);
+        initRot = TRd1(1:2,1:2)*initRot;
+        initPos = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
+        afd1tmp(1:2,:)=TRd1(1:2,1:2)*afd1tmp(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1tmp(1:2,:),2));
+        afd1(1:2,:)=TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1(1:2,:),2));
 
-    afd1(1:2,:)=TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1(1:2,:),2));
+        %% Convergence test
+        colid = ismembertol(round(afd1'*10)/10,wc_dil','ByRows',true)';
+        movpoints = afd1(:,~colid);
+        wc_update_tmp = wc_update;
+        if it ~= 1
+            wc_update_tmp = union(wc_update_tmp',round(movpoints'*10)/10,'rows')';
+        else
+            wc_update_tmp = round(movpoints*10)/10;
+        end
+
+        if  size(wc_update_tmp,2) == 0
+            break
+        end
+        % Overlap Ratio
+        OL_old_id = ismembertol(round(afd1'*10)/10,wc','ByRows',true)';
+        OL_old_pc = afd1(:,OL_old_id);
+        OL_new_id = ismembertol(round(afd1'*10)/10,wc_update_tmp','ByRows',true)';
+        OL_new_pc = afd1(:,OL_new_id);
+        OL_old_R = size(OL_old_pc,2)/size(afd1,2);
+        OL_new_R = size(OL_new_pc,2)/size(afd1,2);
+        if OL_new_R > 0.1 & OL_old_R<OL_new_R
+            converge = false;
+            update_map = false;
+            iter_tmp = 10;
+            i = i+1;
+            disp('Ratio')
+            disp([OL_old_R OL_new_R])
+        else
+            converge = true;
+            update_map = true;
+        end
+    end
+
     rotd1 = initRot;
     trajd1 = initPos;
     t_4=toc;
@@ -185,8 +224,10 @@ for frame=1:step:(m/16)
 
     % Update map
     tic
-    if it ~= 1
+    if it ~= 1 & update_map
         wc_update=union(wc_update',round(movpoints'*10)/10,'rows')';
+    elseif it ~= 1 & ~update_map
+        wc_update = wc_update;
     else
         wc_update = round(movpoints*10)/10;
     end
@@ -197,15 +238,9 @@ for frame=1:step:(m/16)
     bf = af;
     bfd1 = afd1;
     bfd2 = afd2;
+    OLnum = [OLnum [size(OL_old_pc,2);size(OL_new_pc,2);size(afd1,2)]];
     t_7=toc;
 
-    % Overlap Ratio
-    OL_old_id = ismembertol(round(afd1'*10)/10,wc','ByRows',true)';
-    OL_old_pc = afd1(:,OL_old_id);
-    OL_new_id = ismembertol(round(afd1'*10)/10,wc_update','ByRows',true)';
-    OL_new_pc = afd1(:,OL_new_id);
-    OLnum = [OLnum [size(OL_old_pc,2);size(OL_new_pc,2);size(afd1,2)]];
-    
     % Angle of view
     tic
     maxDist = max(max(v1_a),max(v2_a));
@@ -285,7 +320,7 @@ figure
 hold on
 plot(1:5:5*size(OLnum,2),OLnum(1,:))
 plot(1:5:5*size(OLnum,2),OLnum(2,:))
-line([731 731],[0 400],'Color','r','LineStyle','--')
+line([756 756],[0 400],'Color','r','LineStyle','--')
 title('Overlapping Point Number')
 xlabel('Frame')
 ylabel('Point Number')
@@ -298,7 +333,7 @@ figure
 hold on
 plot(1:5:5*size(OL1,2),OL1)
 plot(1:5:5*size(OL2,2),OL2)
-line([731 731],[0 1],'Color','r','LineStyle','--')
+line([756 756],[0 1],'Color','r','LineStyle','--')
 title('Overlapping Ratio')
 xlabel('Frame')
 ylabel('Ratio')

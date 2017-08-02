@@ -31,7 +31,7 @@ load('../read CPEV data/CPEV160728/CPEV_Record_2016_07_28_14_14_36.mat')
 step = 5;
 dr = 1.0;
 wr = 0.1;
-iter = 45;
+iter = 50;
 visible = false;
 size_fit = true;
 frame_pause = -1;
@@ -217,7 +217,7 @@ for frame=1:step:(m/16)
         line1 = line([trajd1(1) trajd1(1)+maskx(1)], [trajd1(2) trajd1(2)+masky(1)]);
         line2 = line([trajd1(1) trajd1(1)+maskx(2)], [trajd1(2) trajd1(2)+masky(2)]);
         % Trajectory
-        scatter(trajd1(1,:),trajd1(2,:),'filled','MarkerFaceColor',trajcolor,'SizeData',4);
+        scatter(trajd1(1,:),trajd1(2,:),'filled','MarkerFaceColor',trajcolor,'SizeData',6);
 
         if size_fit
             xlim([0 size(A,2)/10])
@@ -234,9 +234,11 @@ for frame=1:step:(m/16)
         % break
     end
     tic
-    delete(wall)
-    delete(line1)
-    delete(line2)
+    if visible
+        delete(wall)
+        delete(line1)
+        delete(line2)
+    end
     t_10=toc;
 
     timetable = [timetable;t_1 t_2 t_3 t_4 t_5 t_6 t_7 t_8 t_9 t_10];
@@ -250,7 +252,7 @@ if ~visible
     hold on
     scatter(wc_update(1,:),wc_update(2,:),'filled','MarkerFaceColor','c','SizeData',3);
     % Trajectory
-    scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor',trajcolor,'SizeData',4);
+    scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor',trajcolor,'SizeData',6);
 
     xlim([0 size(A,2)/10])
     ylim([0 size(A,1)/10])
