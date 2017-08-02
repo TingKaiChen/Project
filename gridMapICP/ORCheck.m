@@ -18,7 +18,7 @@ load('wallcloud.mat')
 % Load in dilated wall cloud
 load('wallcloud_dilation.mat')
 
-% Load in the trajectory of "add-only" strategy
+% Load in the trajectory of "add-only" strategy 
 % load('./trajectory/traj_grid_150604.mat')
 
 % Show global map and trajectory
@@ -31,9 +31,10 @@ load('../read CPEV data/CPEV160728/CPEV_Record_2016_07_28_14_14_36.mat')
 step = 5;
 dr = 1.0;
 wr = 0.1;
-iter = 45;
+iter = 50;
 visible = false;
 size_fit = true;
+axis_eq = false;
 frame_pause = -1;
 
 % Initial pose
@@ -59,6 +60,7 @@ wc_update=[];
 traj_data=[];
 timetable=[];
 ptnum=[];
+OLnum=[];
 
 it = 1;
 t_all = tic;
@@ -196,6 +198,13 @@ for frame=1:step:(m/16)
     bfd1 = afd1;
     bfd2 = afd2;
     t_7=toc;
+
+    % Overlap Ratio
+    OL_old_id = ismembertol(round(afd1'*10)/10,wc','ByRows',true)';
+    OL_old_pc = afd1(:,OL_old_id);
+    OL_new_id = ismembertol(round(afd1'*10)/10,wc_update','ByRows',true)';
+    OL_new_pc = afd1(:,OL_new_id);
+    OLnum = [OLnum [size(OL_old_pc,2);size(OL_new_pc,2);size(afd1,2)]];
     
     % Angle of view
     tic
@@ -223,8 +232,12 @@ for frame=1:step:(m/16)
             xlim([0 size(A,2)/10])
             ylim([0 size(A,1)/10])
         end
-        axis equal
+        if axis_eq
+            axis equal
+        end
         drawnow
+
+        
     end
     disp(frame)
     t_9=toc;
@@ -233,12 +246,15 @@ for frame=1:step:(m/16)
         waitforbuttonpress;
         % break
     end
-    tic
-    delete(wall)
-    delete(line1)
-    delete(line2)
-    t_10=toc;
 
+    tic
+    if visible
+        delete(wall)
+        delete(line1)
+        delete(line2)
+    end
+    t_10=toc;
+    
     timetable = [timetable;t_1 t_2 t_3 t_4 t_5 t_6 t_7 t_8 t_9 t_10];
 
 end
@@ -264,3 +280,27 @@ disp('END')
 cd ~/Project/gridMapICP
 hold on
 
+% Figure of overlapping point number
+figure
+hold on
+plot(1:5:5*size(OLnum,2),OLnum(1,:))
+plot(1:5:5*size(OLnum,2),OLnum(2,:))
+line([731 731],[0 400],'Color','r','LineStyle','--')
+title('Overlapping Point Number')
+xlabel('Frame')
+ylabel('Point Number')
+legend('Overlapping Old Points','Overlapping New Points')
+
+% Figure of overlapping point number
+OL1 = OLnum(1,:)./OLnum(3,:);
+OL2 = OLnum(2,:)./OLnum(3,:);
+figure
+hold on
+plot(1:5:5*size(OL1,2),OL1)
+plot(1:5:5*size(OL2,2),OL2)
+line([731 731],[0 1],'Color','r','LineStyle','--')
+title('Overlapping Ratio')
+xlabel('Frame')
+ylabel('Ratio')
+legend('Overlapping Old Points Ratio','Overlapping New Points Ratio')
+ylim([0 1])
