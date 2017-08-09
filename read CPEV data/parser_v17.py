@@ -3,6 +3,7 @@ Parser of 2017 data
 """
 import sys
 import csv
+import scipy.io as sio
 
 def lidar2list(dataStr):
     """
@@ -37,9 +38,9 @@ def gpsParser(gpsData):
     """
     Return a list of GPS data (number only)
     """
-    gpsData = gpsData.strip('\n').split(',')
+    gpsData = gpsData.strip('\n').split(' ')
     # print gpsData
-    return [float(gpsData[i]) for i in [1,2,4,6,7,8,9,11]]
+    return [float(gpsData[i]) for i in [6,7]]
 
 fileName = ""
 outputName = ""
@@ -59,14 +60,12 @@ rowdata = []	# List of every row of the file
 # Read in file
 with open(fileName, mode='r') as cpevData:
     rowdata = cpevData.readlines()
-
-# # Delete the incomplete data
-# while "$GPHDT" not in rowdata[1]:
-# 	del rowdata[0]
+with open(fileName.replace('ibeo_0','GPS'), mode='r') as gpsData:
+    gpsdata = gpsData.readlines()
 
 # Write in a CSV file
 # imuName = outputName.replace('.csv', '_imu.csv')
-# gpsName = outputName.replace('.csv', '_gps.csv')
+gpsName = outputName.replace('.csv', '_gps.mat')
 
 csvFile = open(outputName, 'wb')
 # imufile = open(imuName, 'wb') 
@@ -75,16 +74,20 @@ writer = csv.writer(csvFile)
 # imucsv = csv.writer(imufile)
 # gpscsv = csv.writer(gpsfile)
 
-# gpsdata = []
-for i in range(len(rowdata)):
+gpslists = []
+for i in xrange(len(rowdata)):
     lidarData = lidar2list(rowdata[i])
     degList, valList = degAndVal(lidarData)
     writer.writerow(degList)
     writer.writerow(valList)
+for i in xrange(len(gpsdata)):
+    gpslist = gpsParser(gpsdata[i])
+    gpslists.append(gpslist)
 
 csvFile.close()
 # imufile.close()
 # gpsfile.close()
 
 
+sio.savemat(gpsName,{'gpsdata':gpslists})
 

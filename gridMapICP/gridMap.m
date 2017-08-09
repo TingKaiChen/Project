@@ -26,13 +26,13 @@ scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',
 % scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor','g','SizeData',10)
 
 % Load in LiDAR data
-load('../read CPEV data/CPEV160728/CPEV_Record_2016_07_28_14_14_36.mat')
+load('../read CPEV data/CPEV170522/CPEV_Record_2017_05_22_13_27_24.mat')
 
-step = 5;
+step = 1;
 dr = 1.0;
 wr = 0.1;
 iter = 50;
-visible = false;
+visible = true;
 size_fit = true;
 frame_pause = -1;
 
@@ -41,8 +41,10 @@ rotd1 = eul2rotm([deg2rad(0),0,0]);
 % rotd1 = eul2rotm([deg2rad(-70),0,0]); 
 % rotd1 = eul2rotm([deg2rad(-75),0,0]);   % 0726144311
 % rotd1 = eul2rotm([deg2rad(-100),0,0]);  % 0726142910
+rotd1 = eul2rotm([deg2rad(80),0,0]);
 rotd1 = rotd1(1:2,1:2);
 trajd1 = [35.2;46.1];
+trajd1 = [60;50];
 % trajd1 = [75;45];       % 0728142047
 % trajd1 = [37.2;46.1];   % 0726142826
 % trajd1 = [75;29];   
