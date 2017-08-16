@@ -2,7 +2,7 @@ clc
 % clear
 % Show the digital map
 figure
-A = imread('../Real_Map/utmMap.png');
+A = imread('../Real_Map/correctmap_small.png');
 % Grayscale
 A(:,:,1)=A(:,:,2);
 A(:,:,3)=A(:,:,2);
@@ -26,9 +26,9 @@ scatter(wallcloud(1,:),wallcloud(2,:),'filled','MarkerFaceColor','b','SizeData',
 % scatter(traj_data(1,:),traj_data(2,:),'filled','MarkerFaceColor','g','SizeData',10)
 
 % Load in LiDAR data
-load('../read CPEV data/CPEV170522/CPEV_Record_2017_05_22_13_27_24.mat')
+load('../read CPEV data/CPEV160801/CPEV_Record_2016_08_01_14_20_00.mat')
 
-step = 1;
+step = 5;
 dr = 1.0;
 wr = 0.1;
 iter = 50;
@@ -41,10 +41,10 @@ rotd1 = eul2rotm([deg2rad(0),0,0]);
 % rotd1 = eul2rotm([deg2rad(-70),0,0]); 
 % rotd1 = eul2rotm([deg2rad(-75),0,0]);   % 0726144311
 % rotd1 = eul2rotm([deg2rad(-100),0,0]);  % 0726142910
-rotd1 = eul2rotm([deg2rad(80),0,0]);
+% rotd1 = eul2rotm([deg2rad(80),0,0]);    % 0522
 rotd1 = rotd1(1:2,1:2);
 trajd1 = [35.2;46.1];
-trajd1 = [60;50];
+% trajd1 = [60;50];                       % 0522
 % trajd1 = [75;45];       % 0728142047
 % trajd1 = [37.2;46.1];   % 0726142826
 % trajd1 = [75;29];   

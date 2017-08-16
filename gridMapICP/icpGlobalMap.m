@@ -48,10 +48,11 @@ mapfilename='./globalmap/wallcloud_20170522132724.mat';
 % x = [x1,x2,x3,x4];
 % y = [y1,y2,y3,y4];
 
-load('../read CPEV data/CPEV170523/CPEV_Record_2017_05_23_16_26_17.mat')
+load('../read CPEV data/CPEV170522/CPEV_Record_2017_05_22_13_27_24.mat')
 
 step = 1;
-dr = 1.0;
+wr = 0.1;
+dr = 3.0;
 
 % Initial pose
 rotd1 = eul2rotm([deg2rad(-3.6),0,0]);
@@ -62,10 +63,13 @@ wallcolor = 'b';
 trajcolor = 'k';
 bfd1 = [];
 trajectory = [];
+timetable = [];
 
-tic
+% tic
+t_all = tic;
 it = 1;
 for frame=1:step:(m/16)
+    t_iter = tic;
     iter = 50;
     if frame~=m/16
         while xd1(frame, 1)==0
@@ -123,14 +127,16 @@ for frame=1:step:(m/16)
         afd1tmp = afd1;
         % Initial condition
 
+        wcdist = sum((wallcloud-[trajd1;0]).^2,1).^0.5;
+        wctmp = wallcloud(:,wcdist<=100);
         afd1tmp(1:2,:)=initRot*afd1tmp(1:2,:)+initPos*ones(1,size(afd1tmp(1:2,:),2));
         afd1(1:2,:)=initRot*afd1(1:2,:)+initPos*ones(1,size(afd1(1:2,:),2));
-        [TRd1,TTd1]=icp(wallcloud,afd1tmp,iter,'Matching','kDtree','WorstRejection',0.1);
+        [TRd1,TTd1]=icp(wctmp,afd1tmp,iter,'Matching','kDtree','WorstRejection',wr);
         initRot = TRd1(1:2,1:2)*initRot;
         initPos = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
         afd1tmp(1:2,:)=TRd1(1:2,1:2)*afd1tmp(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1tmp(1:2,:),2));
         afd1(1:2,:)=TRd1(1:2,1:2)*afd1(1:2,:)+TTd1(1:2,1)*ones(1,size(afd1(1:2,:),2));
-        [TRd1,TTd1,p_indxd1,q_indxd1]=icpMatch(wallcloud,afd1tmp,iter,'Matching','kDtree',...
+        [TRd1,TTd1,p_indxd1,q_indxd1]=icpMatch(wctmp,afd1tmp,iter,'Matching','kDtree',...
             'WorstRejection',dr,'UnmatchDistance',0.5);
         initRot = TRd1(1:2,1:2)*initRot;
         initPos = TRd1(1:2,1:2)*initPos+TTd1(1:2,1);
@@ -156,13 +162,19 @@ for frame=1:step:(m/16)
         wc.XData=[wc.XData p(1,:)];
         wc.YData=[wc.YData p(2,:)];
         wc.CData=linspace(1,10,length(wc.XData));
+        % wct.XData=wctmp(1,:);
+        % wct.YData=wctmp(2,:);
         traj.XData=[traj.XData trajd1(1,:)];
         traj.YData=[traj.YData trajd1(2,:)];
         hold on
     else
         wallcloud = rotd1*afd1(1:2,:)+trajd1;
         wallcloud = [round(wallcloud*10)/10;zeros(1,size(wallcloud,2))];
-        wc=scatter(wallcloud(1,:),wallcloud(2,:),3,linspace(1,10,size(wallcloud,2)),'filled');
+        wc=scatter(wallcloud(1,:),wallcloud(2,:),5,linspace(1,10,size(wallcloud,2)),'filled');
+
+        % wcdist = sum((wallcloud-[trajd1;0]).^2,1).^0.5;
+        % wctmp = wallcloud(:,wcdist<=100);
+        % wct = scatter(wctmp(1,:),wctmp(2,:),3,'k');
 
         % Trajectory
         traj = scatter(trajd1(1,:),trajd1(2,:),3,trajcolor,'filled');
@@ -185,14 +197,18 @@ for frame=1:step:(m/16)
     line2 = line([trajd1(1) trajd1(1)+maskx(2)], [trajd1(2) trajd1(2)+masky(2)]);
 
 
-    % xlim([0 size(A,2)/10])
-    % ylim([0 size(A,1)/10])
-    axis equal
-    % drawnow
+    % axis equal
+    drawnow
+    xlim([trajd1(1,end)-20 trajd1(1,end)+20])
+    ylim([trajd1(2,end)-20 trajd1(2,end)+20])
+
 
     disp(frame)
-    % waitforbuttonpress;
+    if frame >= 600
+        waitforbuttonpress;
+    end
 
+    timetable(it)=toc(t_iter);
 
     it = it+1;
     preframe = frame;
@@ -204,6 +220,7 @@ for frame=1:step:(m/16)
     delete(wall)
     delete(line1)
     delete(line2)
+
 end
 % Save the wall point cloud
 % save(mapfilename,'wallcloud','trajectory')
@@ -212,4 +229,4 @@ disp('END')
 % cd ~/Dropbox/study/Project/gridMapICP
 hold on
 
-toc
+toc(t_all)

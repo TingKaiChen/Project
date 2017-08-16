@@ -123,7 +123,7 @@ inp.addParamValue('Verbose', false, @(x)islogical(x));
 
 inp.addParamValue('Weight', @(x)ones(1,length(x)), @(x)isa(x,'function_handle'));
 
-inp.addParamValue('WorstRejection', 0, @(x)isscalar(x) && x > 0 && x < 2);
+inp.addParamValue('WorstRejection', 0, @(x)isscalar(x) && x > 0 );
 
 inp.addParamValue('UnmatchDistance', 0.2, @(x)isscalar(x));
 
