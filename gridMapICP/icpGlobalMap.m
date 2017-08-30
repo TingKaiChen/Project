@@ -50,7 +50,7 @@ mapfilename='./globalmap/wallcloud_20170522132724.mat';
 
 load('../read CPEV data/CPEV170522/CPEV_Record_2017_05_22_13_27_24.mat')
 
-step = 1;
+step = 3;
 wr = 0.1;
 dr = 3.0;
 
@@ -64,6 +64,7 @@ trajcolor = 'k';
 bfd1 = [];
 trajectory = [];
 timetable = [];
+visible = false;
 
 % tic
 t_all = tic;
@@ -183,30 +184,32 @@ for frame=1:step:(m/16)
     end 
 
 
-    % Angle of view
-    maxDist = max(max(v1_a),max(v2_a));
-    oriAng = rotm2eul([rotd1 [0;0];0 0 0]);
-    oriAng = oriAng(1);
-    maxAng = max(max(d1_a),max(d2_a))+oriAng-pi/18;  % Radian
-    minAng = min(min(d1_a),min(d2_a))+oriAng+pi/18;  % Radian
-    [maskx,masky]=pol2cart([maxAng minAng],[maxDist maxDist]);
+    if visible
+        % Angle of view
+        maxDist = max(max(v1_a),max(v2_a));
+        oriAng = rotm2eul([rotd1 [0;0];0 0 0]);
+        oriAng = oriAng(1);
+        maxAng = max(max(d1_a),max(d2_a))+oriAng-pi/18;  % Radian
+        minAng = min(min(d1_a),min(d2_a))+oriAng+pi/18;  % Radian
+        [maskx,masky]=pol2cart([maxAng minAng],[maxDist maxDist]);
 
-    wall=scatter(afd1(1,:),afd1(2,:),3,'r','filled');
-    % Angle of view
-    line1 = line([trajd1(1) trajd1(1)+maskx(1)], [trajd1(2) trajd1(2)+masky(1)]);
-    line2 = line([trajd1(1) trajd1(1)+maskx(2)], [trajd1(2) trajd1(2)+masky(2)]);
+        wall=scatter(afd1(1,:),afd1(2,:),3,'r','filled');
+        % Angle of view
+        line1 = line([trajd1(1) trajd1(1)+maskx(1)], [trajd1(2) trajd1(2)+masky(1)]);
+        line2 = line([trajd1(1) trajd1(1)+maskx(2)], [trajd1(2) trajd1(2)+masky(2)]);
 
 
-    % axis equal
-    drawnow
-    xlim([trajd1(1,end)-20 trajd1(1,end)+20])
-    ylim([trajd1(2,end)-20 trajd1(2,end)+20])
+        % axis equal
+        drawnow
+        % xlim([trajd1(1,end)-20 trajd1(1,end)+20])
+        % ylim([trajd1(2,end)-20 trajd1(2,end)+20])
+    end
 
 
     disp(frame)
-    if frame >= 600
-        waitforbuttonpress;
-    end
+    % if frame >= 600
+    %     waitforbuttonpress;
+    % end
 
     timetable(it)=toc(t_iter);
 
@@ -216,10 +219,11 @@ for frame=1:step:(m/16)
     bfd1 = afd1;
     bfd2 = afd2;
 
-
-    delete(wall)
-    delete(line1)
-    delete(line2)
+    if visible
+        delete(wall)
+        delete(line1)
+        delete(line2)
+    end
 
 end
 % Save the wall point cloud
