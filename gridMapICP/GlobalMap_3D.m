@@ -21,7 +21,7 @@ pgfilename='./pose_graph/pose_20170523162617.mat';
 
 load('../read CPEV data/CPEV170523/CPEV_Record_2017_05_23_16_26_17.mat')
 
-step = 3;
+step = 1;
 wr = 0.1;
 dr = 3.0;
 
