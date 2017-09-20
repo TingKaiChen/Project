@@ -16,29 +16,35 @@ hold on
 % Read in CSV file and seperate the data
 csvfilename='../read CPEV data/CPEV170523/CPEV_Record_2017_05_23_16_22_21.mat';
 mapfilename='./globalmap/wallcloud_20170522132724.mat';
+pgfilename='./pose_graph/pose_20170523162617.mat';
 
 
-load('../read CPEV data/CPEV170522/CPEV_Record_2017_05_22_13_27_24.mat')
+load('../read CPEV data/CPEV170523/CPEV_Record_2017_05_23_16_26_17.mat')
 
 step = 3;
 wr = 0.1;
 dr = 3.0;
 
 % Initial pose
-rotd1 = eul2rotm([deg2rad(-3.6),0,0]);
-% rotd1 = rotd1;
-trajd1 = [35.2;46.1;0];
+% rotd1 = eul2rotm([deg2rad(-3.6),0,0]);
+rotd1 = eul2rotm([0,0,0]);
+% trajd1 = [35.2;46.1;0];
+trajd1 = [0;0;0];
 wallcloud = [];
 wallcolor = 'b';
 trajcolor = 'k';
 bfd1 = [];
 trajectory = [];
 timetable = [];
-visible = true;
+visible = false;
+
+vertex = [0, trajd1', rotm2quat(rotd1)];    % [id,tx,ty,tz,q1,q2,q3,q4]
+edges = []; % [id1,id2,tx,ty,tz,q1,q2,q3,q4]
 
 % tic
 t_all = tic;
 it = 1;
+edge_it = 1;
 for frame=1:step:(m/16)
     t_iter = tic;
     iter = 50;
@@ -128,7 +134,7 @@ for frame=1:step:(m/16)
     else
         wallcloud = rotd1*P_src+trajd1;
         wallcloud = round(wallcloud*10)/10;
-        wc=scatter3(wallcloud(1,:),wallcloud(2,:),wallcloud(3,:),5,linspace(1,10,size(wallcloud,2)),'filled');
+        wc=scatter3(wallcloud(1,:),wallcloud(2,:),wallcloud(3,:),3,linspace(1,10,size(wallcloud,2)),'filled');
 
         % wcdist = sum((wallcloud-[trajd1;0]).^2,1).^0.5;
         % wctmp = wallcloud(:,wcdist<=100);
@@ -139,6 +145,10 @@ for frame=1:step:(m/16)
 
         hold on
     end 
+
+    % Construct pose-graph
+    vertex(it+1,:) = [it, trajd1', rotm2quat(rotd1)];
+    edges(edge_it,:) = [0, it, trajd1', rotm2quat(rotd1)];
 
 
     if visible
@@ -172,6 +182,7 @@ for frame=1:step:(m/16)
     timetable(it)=toc(t_iter);
 
     it = it+1;
+    edge_it = edge_it+1;
     preframe = frame;
     bf = P_src;
     bfd1 = P_src;
@@ -184,8 +195,10 @@ for frame=1:step:(m/16)
     end
 
 end
-% Save the wall point cloud
+% % Save the wall point cloud
 % save(mapfilename,'wallcloud','trajectory')
+% % Save the pose-graph
+save(pgfilename,'vertex','edges')
 
 
 disp('END')
