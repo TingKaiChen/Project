@@ -65,9 +65,9 @@ elif cvtflag == 'g2o2mat':
 		csvreader = csv.reader(g2ofile,delimiter=' ')
 		for row in csvreader:
 			if 'VERTEX_SE3:QUAT' in row:
-				vertex.append([int(row[1])]+map(float,row[2:9]))
+				vertex.append([int(row[1])]+map(float,row[2:5])+[float(row[8])]+map(float,row[5:8]))
 			elif 'EDGE_SE3:QUAT' in row:
-				edges.append(map(int,row[1:3])+map(float,row[3:10]))
+				edges.append(map(int,row[1:3])+map(float,row[3:6])+[float(row[9])]+map(float,row[6:9]))
 
 		print "Convert from .g2o to .mat ..."
 		sio.savemat(outputName,{'vertex':vertex,'edges':edges})
