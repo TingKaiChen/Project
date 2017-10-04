@@ -16,7 +16,7 @@ hold on
 % Read in CSV file and seperate the data
 csvfilename='../read CPEV data/CPEV170523/CPEV_Record_2017_05_23_16_22_21.mat';
 mapfilename='./globalmap/wallcloud_20170522132724.mat';
-pgfilename='./pose_graph/pose_20170523162617.mat';
+pgfilename='./pose_graph/pose_20170523162617_bugfix.mat';
 
 
 load('../read CPEV data/CPEV170523/CPEV_Record_2017_05_23_16_26_17.mat')
@@ -147,8 +147,11 @@ for frame=1:step:(m/16)
     end 
 
     % Construct pose-graph
-    vertex(it+1,:) = [it, trajd1', rotm2quat(rotd1)];
-    edges(edge_it,:) = [0, it, trajd1', rotm2quat(rotd1)];
+    quat = rotm2quat(rotd1);
+    vertex(it+1,:) = [it, trajd1', quat(2:end), quat(1)];
+    % vertex(it+1,:) = [it, trajd1', quat];
+    edges(edge_it,:) = [0, it, trajd1', quat(2:end), quat(1)];
+    % edges(edge_it,:) = [0, it, trajd1', quat];
 
 
     if visible
@@ -197,6 +200,7 @@ for frame=1:step:(m/16)
 end
 % % Save the wall point cloud
 % save(mapfilename,'wallcloud','trajectory')
+
 % % Save the pose-graph
 save(pgfilename,'vertex','edges')
 

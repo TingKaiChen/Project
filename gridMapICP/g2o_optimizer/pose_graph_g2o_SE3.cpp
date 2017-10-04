@@ -36,6 +36,7 @@ int main( int argc, char** argv )
     Block* solver_ptr = new Block( linearSolver );      // 矩阵块求解器
     // 梯度下降方法，从GN, LM, DogLeg 中选
     g2o::OptimizationAlgorithmLevenberg* solver = new g2o::OptimizationAlgorithmLevenberg( solver_ptr );
+    // g2o::OptimizationAlgorithmGaussNewton* solver = new g2o::OptimizationAlgorithmGaussNewton( solver_ptr );
     g2o::SparseOptimizer optimizer;     // 图模型
     optimizer.setAlgorithm( solver );   // 设置求解器
 
@@ -81,7 +82,7 @@ int main( int argc, char** argv )
     optimizer.optimize(30);
     
     cout<<"saving optimization results ..."<<endl;
-    optimizer.save("result_20170523162617.g2o");
+    optimizer.save("result_20170523162617_bugfix.g2o");
 
     return 0;
 }
