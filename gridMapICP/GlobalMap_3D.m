@@ -100,17 +100,17 @@ for frame=1:step:(m/16)
         [TRd1,TTd1]=icp(wctmp,P_src_tmp,iter,'Matching','kDtree','WorstRejection',wr);
         initRot = TRd1*initRot;
         initPos = TRd1*initPos+TTd1;
-        R12  = TRd1;
+        edge_r  = TRd1;
         edge_t  = TTd1;
 
-        if sum(abs(rotm2eul(R1*R12/initRot))>1e-3*[1 1 1])>0
-            disp('-----------1st ICP--------------')
-            disp('Rotation error (rad): R1*R12*R2^T')
-            rotm2eul(R1*R12*initRot')
-            disp('Rotation error (rad): R2^T*R12*R1')
-            rotm2eul(initRot'*R12*R1)
-            % break
-        end
+        % if sum(abs(rotm2eul(R1*edge_r/initRot))>1e-3*[1 1 1])>0
+        %     disp('-----------1st ICP--------------')
+        %     disp('Rotation error (rad): R1*edge_r*R2^T')
+        %     rotm2eul(R1*edge_r*initRot')
+        %     disp('Rotation error (rad): R2^T*edge_r*R1')
+        %     rotm2eul(initRot'*edge_r*R1)
+        %     break
+        % end
 
         P_src_tmp =TRd1*P_src_tmp+TTd1*ones(1,size(P_src_tmp,2));
         P_src     =TRd1*P_src+TTd1*ones(1,size(P_src,2));
@@ -118,20 +118,21 @@ for frame=1:step:(m/16)
             'WorstRejection',dr,'UnmatchDistance',0.5);
         initRot = TRd1*initRot;
         initPos = TRd1*initPos+TTd1;
-        R12  = TRd1*R12;
+        edge_r  = TRd1*edge_r;
+        edge_r  = rotd1'*edge_r*rotd1;
         % edge_t  = TRd1*edge_t+TTd1;
-        % edge_t  = edge_t+(R12-eye(3,3))*trajd1;
+        % edge_t  = edge_t+(edge_r-eye(3,3))*trajd1;
         % edge_t  = rotd1'*edge_t;
         edge_t  = rotd1'*(initPos-trajd1);
 
-        if sum(abs(rotm2eul(R1*R12/initRot))>1e-3*[1 1 1])>0
-            disp('-----------2nd ICP--------------')
-            disp('Rotation error (rad): R1*R12*R2^T')
-            rotm2eul(R1*R12*initRot')
-            disp('Rotation error (rad): R2^T*R12*R1')
-            rotm2eul(initRot'*R12*R1)
-            % break
-        end
+        % if sum(abs(rotm2eul(R1*edge_r/initRot))>1e-3*[1 1 1])>0
+        %     disp('-----------2nd ICP--------------')
+        %     disp('Rotation error (rad): R1*edge_r*R2^T')
+        %     rotm2eul(R1*edge_r*initRot')
+        %     disp('Rotation error (rad): R2^T*edge_r*R1')
+        %     rotm2eul(initRot'*edge_r*R1)
+        %     % break
+        % end
 
         P_src  =TRd1*P_src+TTd1*ones(1,size(P_src,2));
         rotd1  = initRot;
@@ -168,7 +169,8 @@ for frame=1:step:(m/16)
         wallcloud = rotd1*P_src+trajd1;
         wallcloud = round(wallcloud*10)/10;
         wc=scatter3(wallcloud(1,:),wallcloud(2,:),wallcloud(3,:),3,linspace(1,10,size(wallcloud,2)),'filled');
-        R12 = rotd1;
+        edge_r = rotd1;
+        edge_r  = rotd1'*edge_r*rotd1;
         edge_t = trajd1;
 
         % wcdist = sum((wallcloud-[trajd1;0]).^2,1).^0.5;
@@ -183,18 +185,18 @@ for frame=1:step:(m/16)
 
     % Construct pose-graph
     v_quat = rotm2quat(rotd1);
-    e_quat = rotm2quat(R12);
+    e_quat = rotm2quat(edge_r);
     vertex(it+1,:) = [it, trajd1', v_quat(2:end), v_quat(1)];
     edges(edge_it,:) = [e_id, it, edge_t', e_quat(2:end), e_quat(1)];
 
     T2 = [rotd1 trajd1;0 0 0 1];
-    T12 = [R12 edge_t;0 0 0 1];
+    T12 = [edge_r edge_t;0 0 0 1];
     E = T12^-1*T1^-1*T2;
-    % if sum(E(1:3,end)>(1e-5*[1;1;1])) > 0 | sum(abs(rotm2eul(E(1:3,1:3)))>(1e-3*[1 1 1])) > 0
-    %     break
-    % end
-    % R2 = rotd1;
-    % rotm2eul(R12'*R1'*R2)
+    disp('Rotation error (rad): R12^T*R1^T*R2')
+            rotm2eul(edge_r'*R1'*rotd1)
+    if sum(E(1:3,end)>(1e-5*[1;1;1])) > 0 | sum(abs(rotm2eul(E(1:3,1:3)))>(1e-3*[1 1 1])) > 0
+        break
+    end
 
 
     if visible
@@ -246,7 +248,7 @@ end
 % save(mapfilename,'wallcloud','trajectory')
 
 % % Save the pose-graph
-% save(pgfilename,'vertex','edges')
+save(pgfilename,'vertex','edges')
 
 
 disp('END')
