@@ -82,7 +82,7 @@ int main( int argc, char** argv )
     optimizer.optimize(30);
     
     cout<<"saving optimization results ..."<<endl;
-    optimizer.save("result_20170523162617_bugfix.g2o");
+    optimizer.save("result_ICPcycle_20170523162617.g2o");
 
     return 0;
 }

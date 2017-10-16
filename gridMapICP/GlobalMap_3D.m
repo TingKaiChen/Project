@@ -16,30 +16,29 @@ hold on
 % Read in CSV file and seperate the data
 csvfilename ='../read CPEV data/CPEV170523/CPEV_Record_2017_05_23_16_22_21.mat';
 mapfilename ='./globalmap/wallcloud_20170522132724.mat';
-pgfilename  ='./pose_graph/edge_20170522133150.mat';
+pgfilename  ='./pose_graph/ICPcycle_20170523162617.mat';
 
 
-load('../read CPEV data/CPEV170522/CPEV_Record_2017_05_22_13_31_50.mat')
+load('../read CPEV data/CPEV170523/CPEV_Record_2017_05_23_16_26_17.mat')
 
 step = 1;
 wr   = 0.1;
 dr   = 3.0;
 
 % Initial pose
-% rotd1    = eul2rotm([deg2rad(-3.6),0,0]);
-rotd1      = eul2rotm([0,0,0]);
-% trajd1   = [35.2;46.1;0];
-trajd1     = [0;0;0];
+% rot    = eul2rotm([deg2rad(-3.6),0,0]);
+rot      = eul2rotm([0,0,0]);
+% transl   = [35.2;46.1;0];
+transl     = [0;0;0];
 wallcloud  = [];
 wallcolor  = 'b';
 trajcolor  = 'k';
-bfd1       = [];
 trajectory = [];
 timetable  = [];
 visible    = false;
 
-quat   = rotm2quat(rotd1);
-vertex = [0, trajd1', quat(2:end), quat(1)];    % [id,tx,ty,tz,q1,q2,q3,q4]
+quat   = rotm2quat(rot);
+vertex = [0, transl', quat];    % [id,tx,ty,tz,q1,q2,q3,q4]
 edges  = []; % [id1,id2,tx,ty,tz,q1,q2,q3,q4]
 
 % tic
@@ -84,74 +83,50 @@ for frame=1:step:(m/16)
 
     % ICP
     P_src = [x1_a,x2_a,x3_a,x4_a;y1_a,y2_a,y3_a,y4_a;z1_a,z2_a,z3_a,z4_a];
-    T1 = [rotd1 trajd1;0 0 0 1];
-    R1 = rotd1;
+    P_src_w = P_src;
 
     if frame ~= 1
-        initRot   = rotd1;
-        initPos   = trajd1;
+        initRot   = rot;
+        initPos   = transl;
         P_src_tmp = P_src;
         % Initial condition
 
-        wcdist = sum((wallcloud-trajd1).^2,1).^0.5;
+        wcdist = sum((wallcloud-transl).^2,1).^0.5;
         wctmp  = wallcloud(:,wcdist<=100);
         P_src_tmp = initRot*P_src_tmp+initPos*ones(1,size(P_src_tmp,2));
         P_src     = initRot*P_src+initPos*ones(1,size(P_src,2));
-        [TRd1,TTd1]=icp(wctmp,P_src_tmp,iter,'Matching','kDtree','WorstRejection',wr);
-        initRot = TRd1*initRot;
-        initPos = TRd1*initPos+TTd1;
-        edge_r  = TRd1;
-        edge_t  = TTd1;
+        [TR12,TT12]=icp(wctmp,P_src_tmp,iter,'Matching','kDtree','WorstRejection',wr);
+        initRot = TR12*initRot;
+        initPos = TR12*initPos+TT12;
+        edge_r  = TR12;
+        edge_t  = TT12;
 
-        % if sum(abs(rotm2eul(R1*edge_r/initRot))>1e-3*[1 1 1])>0
-        %     disp('-----------1st ICP--------------')
-        %     disp('Rotation error (rad): R1*edge_r*R2^T')
-        %     rotm2eul(R1*edge_r*initRot')
-        %     disp('Rotation error (rad): R2^T*edge_r*R1')
-        %     rotm2eul(initRot'*edge_r*R1)
-        %     break
-        % end
-
-        P_src_tmp =TRd1*P_src_tmp+TTd1*ones(1,size(P_src_tmp,2));
-        P_src     =TRd1*P_src+TTd1*ones(1,size(P_src,2));
-        [TRd1,TTd1,p_indxd1,q_indxd1]=icpMatch(wctmp,P_src_tmp,iter,'Matching','kDtree',...
+        P_src_tmp =TR12*P_src_tmp+TT12*ones(1,size(P_src_tmp,2));
+        P_src     =TR12*P_src+TT12*ones(1,size(P_src,2));
+        [TR12,TT12,p_indxd1,q_indxd1]=icpMatch(wctmp,P_src_tmp,iter,'Matching','kDtree',...
             'WorstRejection',dr,'UnmatchDistance',0.5);
-        initRot = TRd1*initRot;
-        initPos = TRd1*initPos+TTd1;
-        edge_r  = TRd1*edge_r;
-        edge_r  = rotd1'*edge_r*rotd1;
-        % edge_t  = TRd1*edge_t+TTd1;
-        % edge_t  = edge_t+(edge_r-eye(3,3))*trajd1;
-        % edge_t  = rotd1'*edge_t;
-        edge_t  = rotd1'*(initPos-trajd1);
+        initRot = TR12*initRot;
+        initPos = TR12*initPos+TT12;
+        edge_r  = TR12*edge_r;
+        edge_r  = rot'*edge_r*rot;  % Change basis into initial coordinate
+        edge_t  = rot'*(initPos-transl);
 
-        % if sum(abs(rotm2eul(R1*edge_r/initRot))>1e-3*[1 1 1])>0
-        %     disp('-----------2nd ICP--------------')
-        %     disp('Rotation error (rad): R1*edge_r*R2^T')
-        %     rotm2eul(R1*edge_r*initRot')
-        %     disp('Rotation error (rad): R2^T*edge_r*R1')
-        %     rotm2eul(initRot'*edge_r*R1)
-        %     % break
-        % end
-
-        P_src  =TRd1*P_src+TTd1*ones(1,size(P_src,2));
-        rotd1  = initRot;
-        trajd1 = initPos;
-
-        
+        P_src  =TR12*P_src+TT12*ones(1,size(P_src,2));
+        rot  = initRot;
+        transl = initPos;
 
 
         % 
-        % P_src=rotd1*P_src+trajd1;
-        % [TRd1,TTd1,p_idxd1] = icpMatch(wallcloud, P_src, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
+        % P_src=rot*P_src+transl;
+        % [TR12,TT12,p_idxd1] = icpMatch(wallcloud, P_src, iter, 'Matching', 'kDtree', 'WorstRejection', dr);
 
-        % rotd1 = TRd1*rotd1;
-        % trajd1 = TRd1*trajd1+TTd1;
-        trajectory = [trajectory trajd1];
+        % rot = TR12*rot;
+        % transl = TR12*transl+TT12;
+        trajectory = [trajectory transl];
 
         p = P_src(:,p_indxd1);
-        % p = TRd1*p+TTd1;
-        % P_src=TRd1*P_src+TTd1*ones(1,size(P_src,2));
+        % p = TR12*p+TT12;
+        % P_src=TR12*P_src+TT12*ones(1,size(P_src,2));
         % scatter3(px,py,'filled','MarkerFaceColor','b','SizeData',3)
         wallcloud = union(wallcloud',round(p'*10)/10,'rows')';
         % scatter3(p(1,:),p(2,:),'filled','MarkerFaceColor',wallcolor,'SizeData',3);
@@ -161,48 +136,72 @@ for frame=1:step:(m/16)
         wc.CData=linspace(1,10,length(wc.XData));
         % wct.XData=wctmp(1,:);
         % wct.YData=wctmp(2,:);
-        traj.XData=[traj.XData trajd1(1,:)];
-        traj.YData=[traj.YData trajd1(2,:)];
-        traj.ZData=[traj.ZData trajd1(3,:)];
+        traj.XData=[traj.XData transl(1,:)];
+        traj.YData=[traj.YData transl(2,:)];
+        traj.ZData=[traj.ZData transl(3,:)];
         hold on
     else
-        wallcloud = rotd1*P_src+trajd1;
+        wallcloud = rot*P_src+transl;
         wallcloud = round(wallcloud*10)/10;
         wc=scatter3(wallcloud(1,:),wallcloud(2,:),wallcloud(3,:),3,linspace(1,10,size(wallcloud,2)),'filled');
-        edge_r = rotd1;
-        edge_r  = rotd1'*edge_r*rotd1;
-        edge_t = trajd1;
+        edge_r = rot;
+        edge_r  = rot'*edge_r*rot;
+        edge_t = transl;
 
-        % wcdist = sum((wallcloud-[trajd1;0]).^2,1).^0.5;
+        % wcdist = sum((wallcloud-[transl;0]).^2,1).^0.5;
         % wctmp = wallcloud(:,wcdist<=100);
         % wct = scatter3(wctmp(1,:),wctmp(2,:),3,'k');
 
         % Trajectory
-        traj = scatter3(trajd1(1,:),trajd1(2,:),trajd1(3,:),10,trajcolor,'filled');
+        traj = scatter3(transl(1,:),transl(2,:),transl(3,:),10,trajcolor,'filled');
 
         hold on
     end 
 
     % Construct pose-graph
-    v_quat = rotm2quat(rotd1);
+    v_quat = rotm2quat(rot);
     e_quat = rotm2quat(edge_r);
-    vertex(it+1,:) = [it, trajd1', v_quat(2:end), v_quat(1)];
-    edges(edge_it,:) = [e_id, it, edge_t', e_quat(2:end), e_quat(1)];
+    vertex(it+1,:) = [it, transl', v_quat];
+    edges(edge_it,:) = [e_id, it, edge_t', e_quat];
+    edge_it = edge_it+1;
 
-    T2 = [rotd1 trajd1;0 0 0 1];
-    T12 = [edge_r edge_t;0 0 0 1];
-    E = T12^-1*T1^-1*T2;
-    disp('Rotation error (rad): R12^T*R1^T*R2')
-            rotm2eul(edge_r'*R1'*rotd1)
-    if sum(E(1:3,end)>(1e-5*[1;1;1])) > 0 | sum(abs(rotm2eul(E(1:3,1:3)))>(1e-3*[1 1 1])) > 0
-        break
+    % ICP cycle edge
+    if mod(frame,3) == 1 & frame > 1
+        r1 = quat2rotm(vertex(it-2,end-3:end));
+        t1 = vertex(it-2,2:4)';
+        initRot   = r1;
+        initPos   = t1;
+        P_src = P_src_w;
+        % Initial condition
+
+        wcdist = sum((wallcloud-t1).^2,1).^0.5;
+        wctmp  = wallcloud(:,wcdist<=100);
+        P_src     = initRot*P_src+initPos*ones(1,size(P_src,2));
+        [TR12,TT12]=icp(wctmp,P_src,iter,'Matching','kDtree','WorstRejection',wr);
+        initRot = TR12*initRot;
+        initPos = TR12*initPos+TT12;
+        edge_r  = TR12;
+        edge_t  = TT12;
+
+        P_src     =TR12*P_src+TT12*ones(1,size(P_src,2));
+        [TR12,TT12,p_indxd1,q_indxd1]=icpMatch(wctmp,P_src,iter,'Matching','kDtree',...
+            'WorstRejection',dr,'UnmatchDistance',0.5);
+        initRot = TR12*initRot;
+        initPos = TR12*initPos+TT12;
+        edge_r  = TR12*edge_r;
+        edge_r  = r1'*edge_r*r1;  % Change basis into initial coordinate
+        edge_t  = r1'*(initPos-t1);
+
+        % Add a new cycle edge
+        e_quat = rotm2quat(edge_r);
+        edges(edge_it,:) = [it-3, it, edge_t', e_quat];
+        edge_it = edge_it+1;
     end
-
 
     if visible
         % Angle of view
         maxDist = max(max(v1_a),max(v2_a));
-        oriAng = rotm2eul(rotd1);
+        oriAng = rotm2eul(rot);
         oriAng = oriAng(1);
         maxAng = max(max(d1_a),max(d2_a))+oriAng-pi/18;  % Radian
         minAng = min(min(d1_a),min(d2_a))+oriAng+pi/18;  % Radian
@@ -210,14 +209,14 @@ for frame=1:step:(m/16)
 
         wall=scatter3(P_src(1,:),P_src(2,:),P_src(3,:),3,'r','filled');
         % Angle of view
-        line1 = line([trajd1(1) trajd1(1)+maskx(1)], [trajd1(2) trajd1(2)+masky(1)]);
-        line2 = line([trajd1(1) trajd1(1)+maskx(2)], [trajd1(2) trajd1(2)+masky(2)]);
+        line1 = line([transl(1) transl(1)+maskx(1)], [transl(2) transl(2)+masky(1)]);
+        line2 = line([transl(1) transl(1)+maskx(2)], [transl(2) transl(2)+masky(2)]);
 
 
         % axis equal
         drawnow
-        % xlim([trajd1(1,end)-20 trajd1(1,end)+20])
-        % ylim([trajd1(2,end)-20 trajd1(2,end)+20])
+        % xlim([transl(1,end)-20 transl(1,end)+20])
+        % ylim([transl(2,end)-20 transl(2,end)+20])
     end
 
 
@@ -231,10 +230,8 @@ for frame=1:step:(m/16)
 
     e_id = it;
     it = it+1;
-    edge_it = edge_it+1;
     preframe = frame;
     bf = P_src;
-    bfd1 = P_src;
 
 
     if visible
@@ -244,6 +241,11 @@ for frame=1:step:(m/16)
     end
 
 end
+
+% Order of quaternion in g2o
+vertex(:,end-3:end) = [vertex(:,end-2:end) vertex(:,end-3)];
+edges(:,end-3:end) = [edges(:,end-2:end), edges(:,end-3)];
+
 % % Save the wall point cloud
 % save(mapfilename,'wallcloud','trajectory')
 
