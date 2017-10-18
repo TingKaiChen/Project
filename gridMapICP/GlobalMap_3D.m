@@ -1,6 +1,6 @@
 clc
 clear
-figure
+figure(1)
 % Show the digital map
 % A = imread('../Real_Map/utmMap.png');
 % % Grayscale
@@ -13,13 +13,17 @@ axis equal
 
 hold on
 
+figure(2)
+hold on
+axis equal
+
 % Read in CSV file and seperate the data
 csvfilename ='../read CPEV data/CPEV170523/CPEV_Record_2017_05_23_16_22_21.mat';
 mapfilename ='./globalmap/wallcloud_20170522132724.mat';
-pgfilename  ='./pose_graph/ICPcycle_20170523162617.mat';
+pgfilename  ='./pose_graph/pose_20170523162617_s3.mat';
 
 
-load('../read CPEV data/CPEV170523/CPEV_Record_2017_05_23_16_26_17.mat')
+load('../read CPEV data/CPEV170522/CPEV_Record_2017_05_22_13_27_24.mat')
 
 step = 1;
 wr   = 0.1;
@@ -140,19 +144,34 @@ for frame=1:step:(m/16)
         traj.YData=[traj.YData transl(2,:)];
         traj.ZData=[traj.ZData transl(3,:)];
         hold on
+
+        cmpR.XData = wctmp(1,:);
+        cmpR.YData = wctmp(2,:);
+        cmpR.ZData = wctmp(3,:);
+        cmpC.XData = P_src(1,:);
+        cmpC.YData = P_src(2,:);
+        cmpC.ZData = P_src(3,:);
     else
         wallcloud = rot*P_src+transl;
         wallcloud = round(wallcloud*10)/10;
+        figure(1)
         wc=scatter3(wallcloud(1,:),wallcloud(2,:),wallcloud(3,:),3,linspace(1,10,size(wallcloud,2)),'filled');
         edge_r = rot;
         edge_r  = rot'*edge_r*rot;
         edge_t = transl;
+
+        figure(2)
+        hold on
+        cmpR = scatter3(wc.XData,wc.YData,wc.ZData,5,'k','filled');
+        cmpC = scatter3([],[],[],5,'b','filled');
+        cmp3 = scatter3([],[],[],5,'r','filled');
 
         % wcdist = sum((wallcloud-[transl;0]).^2,1).^0.5;
         % wctmp = wallcloud(:,wcdist<=100);
         % wct = scatter3(wctmp(1,:),wctmp(2,:),3,'k');
 
         % Trajectory
+        figure(1)
         traj = scatter3(transl(1,:),transl(2,:),transl(3,:),10,trajcolor,'filled');
 
         hold on
@@ -196,9 +215,15 @@ for frame=1:step:(m/16)
         e_quat = rotm2quat(edge_r);
         edges(edge_it,:) = [it-3, it, edge_t', e_quat];
         edge_it = edge_it+1;
+
+        P_src  =TR12*P_src+TT12*ones(1,size(P_src,2));
+        cmp3.XData = P_src(1,:);
+        cmp3.YData = P_src(2,:);
+        cmp3.ZData = P_src(3,:);
     end
 
     if visible
+        figure(1)
         % Angle of view
         maxDist = max(max(v1_a),max(v2_a));
         oriAng = rotm2eul(rot);
@@ -220,11 +245,11 @@ for frame=1:step:(m/16)
     end
 
 
-    disp(['Iteration: ', num2str(frame)])
-    % if frame >100
-    %     % waitforbuttonpress;
-    %     break
-    % end
+    disp(['Iteration: ', num2str(it), '  Frame: ', num2str(frame)])
+    if mod(frame,3) == 1 & frame > 1800
+        waitforbuttonpress;
+        % break
+    end
 
     timetable(it)=toc(t_iter);
 
@@ -250,7 +275,7 @@ edges(:,end-3:end) = [edges(:,end-2:end), edges(:,end-3)];
 % save(mapfilename,'wallcloud','trajectory')
 
 % % Save the pose-graph
-save(pgfilename,'vertex','edges')
+% save(pgfilename,'vertex','edges')
 
 
 disp('END')

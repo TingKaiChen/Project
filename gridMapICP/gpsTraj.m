@@ -1,5 +1,5 @@
 figure
-load('../read CPEV data/CPEV170523/CPEV_Record_2017_05_23_16_26_17_gps.mat');
+load('../read CPEV data/CPEV170522/CPEV_Record_2017_05_22_13_27_24_gps.mat');
 
 [x,y,z]=deg2utm(gpsdata(:,2),gpsdata(:,1));
 
