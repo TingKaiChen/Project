@@ -20,10 +20,10 @@ axis equal
 % Read in CSV file and seperate the data
 csvfilename ='../read CPEV data/CPEV170523/CPEV_Record_2017_05_23_16_22_21.mat';
 mapfilename ='./globalmap/wallcloud_20170522132724.mat';
-pgfilename  ='./pose_graph/pose_20170523162617_s3.mat';
+pgfilename  ='./pose_graph/LoopClosure/lc_20170523162617.mat';
 
 
-load('../read CPEV data/CPEV170522/CPEV_Record_2017_05_22_13_27_24.mat')
+load('../read CPEV data/CPEV170523/CPEV_Record_2017_05_23_16_26_17.mat')
 
 step = 1;
 wr   = 0.1;
@@ -145,13 +145,15 @@ for frame=1:step:(m/16)
         traj.ZData=[traj.ZData transl(3,:)];
         hold on
 
-        cmpR.XData = wctmp(1,:);
-        cmpR.YData = wctmp(2,:);
-        cmpR.ZData = wctmp(3,:);
-        cmpC.XData = P_src(1,:);
-        cmpC.YData = P_src(2,:);
-        cmpC.ZData = P_src(3,:);
+        % cmpR.XData = wctmp(1,:);
+        % cmpR.YData = wctmp(2,:);
+        % cmpR.ZData = wctmp(3,:);
+        % cmpC.XData = P_src(1,:);
+        % cmpC.YData = P_src(2,:);
+        % cmpC.ZData = P_src(3,:);
     else
+        initRot = rot;
+        initPos = transl;
         wallcloud = rot*P_src+transl;
         wallcloud = round(wallcloud*10)/10;
         figure(1)
@@ -160,11 +162,11 @@ for frame=1:step:(m/16)
         edge_r  = rot'*edge_r*rot;
         edge_t = transl;
 
-        figure(2)
-        hold on
-        cmpR = scatter3(wc.XData,wc.YData,wc.ZData,5,'k','filled');
-        cmpC = scatter3([],[],[],5,'b','filled');
-        cmp3 = scatter3([],[],[],5,'r','filled');
+        % figure(2)
+        % hold on
+        % cmpR = scatter3(wc.XData,wc.YData,wc.ZData,5,'k','filled');
+        % cmpC = scatter3([],[],[],5,'b','filled');
+        % cmp3 = scatter3([],[],[],5,'r','filled');
 
         % wcdist = sum((wallcloud-[transl;0]).^2,1).^0.5;
         % wctmp = wallcloud(:,wcdist<=100);
@@ -180,47 +182,49 @@ for frame=1:step:(m/16)
     % Construct pose-graph
     v_quat = rotm2quat(rot);
     e_quat = rotm2quat(edge_r);
+    % e_quat = rotm2quat(initRot);
     vertex(it+1,:) = [it, transl', v_quat];
     edges(edge_it,:) = [e_id, it, edge_t', e_quat];
+    % edges(edge_it,:) = [0, it, initPos', e_quat];
     edge_it = edge_it+1;
 
     % ICP cycle edge
-    if mod(frame,3) == 1 & frame > 1
-        r1 = quat2rotm(vertex(it-2,end-3:end));
-        t1 = vertex(it-2,2:4)';
-        initRot   = r1;
-        initPos   = t1;
-        P_src = P_src_w;
-        % Initial condition
+    % if mod(frame,3) == 1 & frame > 1
+    %     r1 = quat2rotm(vertex(it-2,end-3:end));
+    %     t1 = vertex(it-2,2:4)';
+    %     initRot   = r1;
+    %     initPos   = t1;
+    %     P_src = P_src_w;
+    %     % Initial condition
 
-        wcdist = sum((wallcloud-t1).^2,1).^0.5;
-        wctmp  = wallcloud(:,wcdist<=100);
-        P_src     = initRot*P_src+initPos*ones(1,size(P_src,2));
-        [TR12,TT12]=icp(wctmp,P_src,iter,'Matching','kDtree','WorstRejection',wr);
-        initRot = TR12*initRot;
-        initPos = TR12*initPos+TT12;
-        edge_r  = TR12;
-        edge_t  = TT12;
+    %     wcdist = sum((wallcloud-t1).^2,1).^0.5;
+    %     wctmp  = wallcloud(:,wcdist<=100);
+    %     P_src     = initRot*P_src+initPos*ones(1,size(P_src,2));
+    %     [TR12,TT12]=icp(wctmp,P_src,iter,'Matching','kDtree','WorstRejection',wr);
+    %     initRot = TR12*initRot;
+    %     initPos = TR12*initPos+TT12;
+    %     edge_r  = TR12;
+    %     edge_t  = TT12;
 
-        P_src     =TR12*P_src+TT12*ones(1,size(P_src,2));
-        [TR12,TT12,p_indxd1,q_indxd1]=icpMatch(wctmp,P_src,iter,'Matching','kDtree',...
-            'WorstRejection',dr,'UnmatchDistance',0.5);
-        initRot = TR12*initRot;
-        initPos = TR12*initPos+TT12;
-        edge_r  = TR12*edge_r;
-        edge_r  = r1'*edge_r*r1;  % Change basis into initial coordinate
-        edge_t  = r1'*(initPos-t1);
+    %     P_src     =TR12*P_src+TT12*ones(1,size(P_src,2));
+    %     [TR12,TT12,p_indxd1,q_indxd1]=icpMatch(wctmp,P_src,iter,'Matching','kDtree',...
+    %         'WorstRejection',dr,'UnmatchDistance',0.5);
+    %     initRot = TR12*initRot;
+    %     initPos = TR12*initPos+TT12;
+    %     edge_r  = TR12*edge_r;
+    %     edge_r  = r1'*edge_r*r1;  % Change basis into initial coordinate
+    %     edge_t  = r1'*(initPos-t1);
 
-        % Add a new cycle edge
-        e_quat = rotm2quat(edge_r);
-        edges(edge_it,:) = [it-3, it, edge_t', e_quat];
-        edge_it = edge_it+1;
+    %     % Add a new cycle edge
+    %     e_quat = rotm2quat(edge_r);
+    %     edges(edge_it,:) = [it-3, it, edge_t', e_quat];
+    %     edge_it = edge_it+1;
 
-        P_src  =TR12*P_src+TT12*ones(1,size(P_src,2));
-        cmp3.XData = P_src(1,:);
-        cmp3.YData = P_src(2,:);
-        cmp3.ZData = P_src(3,:);
-    end
+    %     P_src  =TR12*P_src+TT12*ones(1,size(P_src,2));
+    %     % cmp3.XData = P_src(1,:);
+    %     % cmp3.YData = P_src(2,:);
+    %     % cmp3.ZData = P_src(3,:);
+    % end
 
     if visible
         figure(1)
@@ -246,10 +250,10 @@ for frame=1:step:(m/16)
 
 
     disp(['Iteration: ', num2str(it), '  Frame: ', num2str(frame)])
-    if mod(frame,3) == 1 & frame > 1800
-        waitforbuttonpress;
-        % break
-    end
+    % if mod(frame,3) == 1 & frame > 1800
+    %     waitforbuttonpress;
+    %     % break
+    % end
 
     timetable(it)=toc(t_iter);
 
@@ -267,6 +271,9 @@ for frame=1:step:(m/16)
 
 end
 
+% Simple loop closure
+edges(edge_it,:) = [e_id, 0, [0 0 0], [1 0 0 0]];
+
 % Order of quaternion in g2o
 vertex(:,end-3:end) = [vertex(:,end-2:end) vertex(:,end-3)];
 edges(:,end-3:end) = [edges(:,end-2:end), edges(:,end-3)];
@@ -275,7 +282,7 @@ edges(:,end-3:end) = [edges(:,end-2:end), edges(:,end-3)];
 % save(mapfilename,'wallcloud','trajectory')
 
 % % Save the pose-graph
-% save(pgfilename,'vertex','edges')
+save(pgfilename,'vertex','edges')
 
 
 disp('END')
