@@ -71,38 +71,60 @@ for frame=1:1:(m/16)
     [X4_a, Y4_a, Z4_a] = sph2cart(D4_a,ones(size(D4_a))*(1.6)*pi/180,V4_a); 
 
     % Excluded edge points
-    excluded_ptID = false(1,length(D1_a));
+    occluded_ptID = false(1,length(D1_a));
     depthDiff = V1_a(1:end-1)-V1_a(2:end);
     angleDiff = D1_a(1:end-1)-D1_a(2:end);
     % Distance threshold
-    excluded_ptID(depthDiff>th_dist) = true;
-    excluded_ptID([false depthDiff<-th_dist]) = true;
+    id_greater = depthDiff>th_dist;
+    occluded_ptID(id_greater) = true;
+    % occluded_ptID(id_greater(2:end)) = true;
+    % occluded_ptID(id_greater(3:end)) = true;
+    id_smaller = depthDiff<-th_dist;
+    occluded_ptID([false id_smaller]) = true;
+    % occluded_ptID([false false id_smaller(1:end-1)]) = true;
+    % occluded_ptID([false false false id_smaller(1:end-2)]) = true;
     % Angle threshold
-    excluded_ptID(abs(angleDiff)>deg2rad(th_angle)) = false;
-    excluded_ptID([false abs(angleDiff)>deg2rad(th_angle)]) = false;
+    id_angle = abs(angleDiff)>deg2rad(th_angle);
+    % occluded_ptID(id_angle(3:end)) = false;
+    % occluded_ptID(id_angle(2:end)) = false;
+    occluded_ptID(id_angle) = false;
+    occluded_ptID([false id_angle]) = false;
+    % occluded_ptID([false false id_angle(1:end-1)]) = false;
+    % occluded_ptID([false false false id_angle(1:end-2)]) = false;
 
-    X1_noex = X1_a(~excluded_ptID);
-    Y1_noex = Y1_a(~excluded_ptID);
-    Z1_noex = Z1_a(~excluded_ptID);
+    X1_nooc = X1_a(~occluded_ptID);
+    Y1_nooc = Y1_a(~occluded_ptID);
+    Z1_nooc = Z1_a(~occluded_ptID);
 
     % Calculate the curverture and find some edge points
-    l1 = [X1_noex;Y1_noex;Z1_noex];
+    l1 = [X1_nooc;Y1_nooc;Z1_nooc];
+    % diff_l1 = l1(:,5:end-4)*8-l1(:,4:end-5)-l1(:,3:end-6)-l1(:,2:end-7)-l1(:,1:end-8) ...
+    %                          -l1(:,6:end-3)-l1(:,7:end-2)-l1(:,8:end-1)-l1(:,9:end);
     diff_l1 = l1(:,4:end-3)*6-l1(:,3:end-4)-l1(:,2:end-5)-l1(:,1:end-6) ...
                              -l1(:,5:end-2)-l1(:,6:end-1)-l1(:,7:end);
+    % diff_l1 = l1(:,3:end-2)*4-l1(:,2:end-3)-l1(:,1:end-4) ...
+    %                          -l1(:,4:end-1)-l1(:,5:end);
+    % diff_l1 = l1(:,2:end-1)*2-l1(:,1:end-2) ...
+    %                          -l1(:,3:end); 
     c = sum(diff_l1.^2,1);
     [~,id_sort] = sort(c);
-    scatter3(X1_noex(id_sort),Y1_noex(id_sort),Z1_noex(id_sort),20,linspace(0,1.0,length(id_sort)),'filled');
-    hold on
-    line(X1_noex,Y1_noex,Z1_noex)
-    scatter3(X1_noex(id_sort),Y1_noex(id_sort),Z1_noex(id_sort),20,linspace(0,1.0,length(id_sort)),'filled');
-    LineMat = zeros(3,length(X1_a)*2);
-    LineMat(:,1:2:end) = [X1_a;Y1_a;Z1_a];
-    line(LineMat(1,:),LineMat(2,:),LineMat(3,:),'LineWidth',0.1,'Color','r');
+    id_sort = id_sort+3;
+
+    id_choose = [id_sort(1:floor(length(id_sort)/3)) id_sort(ceil(length(id_sort)*2/3):end)];
+    scatter3(X1_nooc(id_choose),Y1_nooc(id_choose),Z1_nooc(id_choose),20,colormap(jet(length(id_choose))),'filled');
+    % hold on
+    % line(X1_nooc,Y1_nooc,Z1_nooc)
+    % scatter3(X1_nooc(id_sort),Y1_nooc(id_sort),Z1_nooc(id_sort),20,colormap(jet(length(id_sort))),'filled');
+    % LineMat = zeros(3,length(X1_a)*2);
+    % LineMat(:,1:2:end) = [X1_a;Y1_a;Z1_a];
+    % line(LineMat(1,:),LineMat(2,:),LineMat(3,:),'LineWidth',0.1,'Color','r');
     hold off
     view(2)
     xlim([-40,40])
     ylim([0,80])
     drawnow
+    disp(['max: ',num2str(max(c))])
+    disp(['min: ',num2str(min(c))])
     % waitforbuttonpress;
 
 % break;
