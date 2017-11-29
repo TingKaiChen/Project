@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
     cb.calculate_normals (25);
-    cb.calculate_voxel_grid_keypoints (0.5);
+    cb.calculate_voxel_grid_keypoints (1.0);
     // The support size can be varied and number of matches and computational time may change accordingly
     cb.calculate_SHOT (15);
 

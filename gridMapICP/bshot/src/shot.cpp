@@ -1,31 +1,35 @@
 # include <bshot_bits.h>
 
-int main()
+int main(int argc, char** argv)
 {
     bshot cb;
 
+    if ( argc != 3 )
+    {
+        cout<<"Usage: shot target.pcd source.pcd"<<endl;
+        return 1;
+    }
     //load data or scene point cloud
-    pcl::io::loadPCDFile<pcl::PointXYZ>("../sample_pcd/scene005_0.pcd", cb.cloud2);
-
+    pcl::io::loadPCDFile<pcl::PointXYZ>(argv[1], cb.cloud2);
     /// load model
-    pcl::io::loadPCDFile<pcl::PointXYZ>("../sample_pcd/Doll018_0.pcd", cb.cloud1);
+    pcl::io::loadPCDFile<pcl::PointXYZ>(argv[2], cb.cloud1);
     //pcl::io::loadPCDFile<pcl::PointXYZ>("../sample_pcd/PeterRabbit015_0.pcd", cb.cloud1);
     //pcl::io::loadPCDFile<pcl::PointXYZ>("../sample_pcd/mario000_0.pcd", cb.cloud1);
 
-    cb.calculate_normals (0.02);
-
-    cb.calculate_voxel_grid_keypoints (0.01);
-
+    high_resolution_clock::time_point t1 = high_resolution_clock::now();
+    cb.calculate_normals (25);
+    cb.calculate_voxel_grid_keypoints (1.0);
     // The support size can be varied and number of matches and computational time may change accordingly
-    cb.calculate_SHOT (0.15);
+    cb.calculate_SHOT (15);
+
+    high_resolution_clock::time_point t2 = high_resolution_clock::now();
+    duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+    std::cout << "Time taken for SHOT Creation : " << time_span.count() << std::endl;
+
 
     clock_t start, end;
     double cpu_time_used;
     start = clock();
-
-    /////////////////////////////////////////////////////////////////////////////
-    // determine correspondences
-    // This uses KdTree based NN search
 
     pcl::registration::CorrespondenceEstimation<pcl::SHOT352, pcl::SHOT352> corr_est;
     corr_est.setInputSource(cb.cloud1_shot.makeShared()); // + setIndices(...)
@@ -63,16 +67,16 @@ int main()
 
     /// VISUALIZATION MODULE
     boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-    viewer->setBackgroundColor (0, 0, 0);
+    viewer->setBackgroundColor (255, 255, 255);
 
     pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> single_color1(cb.cloud1_keypoints.makeShared(), 200, 0, 0);
     viewer->addPointCloud<pcl::PointXYZ> (cb.cloud1_keypoints.makeShared(), single_color1, "sample cloud1");
-    viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 4, "sample cloud1");
+    viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 8, "sample cloud1");
     //viewer->addCoordinateSystem (1.0);
     viewer->initCameraParameters ();
 
     Eigen::Matrix4f t;
-    t<<1,0,0,0.6,
+    t<<1,0,0,0.0,
             0,1,0,0,
             0,0,1,0,
             0,0,0,1;
@@ -82,16 +86,16 @@ int main()
 
     pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> single_color2(cb.cloud2_keypoints.makeShared(), 0, 0, 150);
     viewer->addPointCloud<pcl::PointXYZ> (cb.cloud2_keypoints.makeShared(), single_color2, "sample cloud2");
-    viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 4, "sample cloud2");
+    viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 8, "sample cloud2");
 
-    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> single_color3(cb.cloud1.makeShared(), 255, 255, 255);
+    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> single_color3(cb.cloud1.makeShared(), 0, 0, 0);
     viewer->addPointCloud<pcl::PointXYZ> (cb.cloud1.makeShared(), single_color3, "sample cloud3");
     viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud3");
 
     //cloudNext is my target cloud
     pcl::transformPointCloud(cb.cloud2,cb.cloud2,t);
 
-    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> single_color4(cb.cloud2.makeShared(), 255, 255, 255);
+    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> single_color4(cb.cloud2.makeShared(), 0, 0, 0);
     viewer->addPointCloud<pcl::PointXYZ> (cb.cloud2.makeShared(), single_color4, "sample cloud4");
     viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "sample cloud4");
 
