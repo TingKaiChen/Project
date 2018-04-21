@@ -112,12 +112,12 @@ for frame=1:1:(m/16)
 
     id_choose = [id_sort(1:floor(length(id_sort)/3)) id_sort(ceil(length(id_sort)*2/3):end)];
     scatter3(X1_nooc(id_choose),Y1_nooc(id_choose),Z1_nooc(id_choose),20,colormap(jet(length(id_choose))),'filled');
-    % hold on
+    hold on
     % line(X1_nooc,Y1_nooc,Z1_nooc)
     % scatter3(X1_nooc(id_sort),Y1_nooc(id_sort),Z1_nooc(id_sort),20,colormap(jet(length(id_sort))),'filled');
-    % LineMat = zeros(3,length(X1_a)*2);
-    % LineMat(:,1:2:end) = [X1_a;Y1_a;Z1_a];
-    % line(LineMat(1,:),LineMat(2,:),LineMat(3,:),'LineWidth',0.1,'Color','r');
+    LineMat = zeros(3,length(X1_a)*2);
+    LineMat(:,1:2:end) = [X1_a;Y1_a;Z1_a];
+    line(LineMat(1,:),LineMat(2,:),LineMat(3,:),'LineWidth',0.1,'Color','r');
     hold off
     view(2)
     xlim([-40,40])

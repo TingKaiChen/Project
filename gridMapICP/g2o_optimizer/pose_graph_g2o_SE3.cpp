@@ -79,10 +79,10 @@ int main( int argc, char** argv )
     optimizer.setVerbose(true);
     optimizer.initializeOptimization();
     cout<<"calling optimizing ..."<<endl;
-    optimizer.optimize(30);
+    optimizer.optimize(50000);
     
     cout<<"saving optimization results ..."<<endl;
-    optimizer.save("result_ICPcycle_20170523162617.g2o");
+    optimizer.save("LoopClosure/result_lc_20170523162617.g2o");
 
     return 0;
 }

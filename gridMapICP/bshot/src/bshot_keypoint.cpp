@@ -4,21 +4,21 @@ int main(int argc, char** argv)
 {
     bshot cb;
 
-    if ( argc != 3 )
+    if ( argc != 5 )
     {
-        cout<<"Usage: bshot target.pcd source.pcd"<<endl;
+        cout<<"Usage: bshot target.pcd target_keypoints.pcd source.pcd source_keypoints.pcd"<<endl;
         return 1;
     }
     //load data or scene point cloud
     pcl::io::loadPCDFile<pcl::PointXYZ>(argv[1], cb.cloud2);
+    pcl::io::loadPCDFile<pcl::PointXYZ>(argv[2], cb.cloud2_keypoints);
     /// load model
-    pcl::io::loadPCDFile<pcl::PointXYZ>(argv[2], cb.cloud1);
-    //pcl::io::loadPCDFile<pcl::PointXYZ>("../sample_pcd/PeterRabbit015_0.pcd", cb.cloud1);
-    //pcl::io::loadPCDFile<pcl::PointXYZ>("../sample_pcd/mario000_0.pcd", cb.cloud1);
+    pcl::io::loadPCDFile<pcl::PointXYZ>(argv[3], cb.cloud1);
+    pcl::io::loadPCDFile<pcl::PointXYZ>(argv[4], cb.cloud1_keypoints);
 
     high_resolution_clock::time_point t1 = high_resolution_clock::now();
-    cb.calculate_normals (10);
-    cb.calculate_voxel_grid_keypoints (2);
+    cb.calculate_normals (3);
+    // cb.calculate_voxel_grid_keypoints (2);
     // The support size can be varied and number of matches and computational time may change accordingly
     cb.calculate_SHOT (3);
 
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
     pcl::registration::CorrespondenceRejectorSampleConsensus< pcl::PointXYZ > Ransac_based_Rejection;
     Ransac_based_Rejection.setInputSource(cb.cloud1_keypoints.makeShared());
     Ransac_based_Rejection.setInputTarget(cb.cloud2_keypoints.makeShared());
-    double sac_threshold = 0.05;// default PCL value..can be changed and may slightly affect the number of correspondences
+    double sac_threshold = 1;// default PCL value..can be changed and may slightly affect the number of correspondences
     Ransac_based_Rejection.setInlierThreshold(sac_threshold);
     Ransac_based_Rejection.setInputCorrespondences(correspond);
     Ransac_based_Rejection.getCorrespondences(corr);
@@ -105,6 +105,8 @@ int main(int argc, char** argv)
     std::cout << "Time taken for Outlier Removal via RANSAC : " << (double)cpu_time_used1 << std::endl;
 
     cout << "No. of B-SHOT Matches : " << corr.size() << endl;
+    cout << "No. of source keypoints: " << cb.cloud1_keypoints.size() << endl;
+    cout << "No. of target keypoints: " << cb.cloud2_keypoints.size() << endl;
 
 
     /// VISUALIZATION MODULE

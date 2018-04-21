@@ -15,7 +15,7 @@ else:
 	quit()
 
 
-print "Convert from .mat to .g2o ..."
+print "Convert from .mat to .pcd ..."
 
 # Read in file
 matdata = sio.loadmat(sys.argv[1]) 

@@ -28,3 +28,9 @@ target_link_libraries (shot ${PCL_LIBRARIES} )
 add_executable (bshot src/bshot.cpp)
 target_link_libraries (bshot ${PCL_LIBRARIES} )
 
+add_executable (PointPickingTest src/PointPickingTest.cpp)
+target_link_libraries (PointPickingTest ${PCL_LIBRARIES} )
+
+add_executable (bshot_keypoint src/bshot_keypoint.cpp)
+target_link_libraries (bshot_keypoint ${PCL_LIBRARIES} )
+

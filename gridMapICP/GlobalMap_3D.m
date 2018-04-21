@@ -23,7 +23,7 @@ mapfilename ='./globalmap/wallcloud_20170522132724.mat';
 pgfilename  ='./pose_graph/LoopClosure/nooc_20170523162617.mat';
 
 
-load('../read CPEV data/CPEV170523/CPEV_Record_2017_05_23_16_26_17.mat')
+load('../read CPEV data/CPEV170913/out.mat')
 
 step = 1;
 wr   = 0.1;
@@ -39,7 +39,7 @@ wallcolor  = 'b';
 trajcolor  = 'k';
 trajectory = [];
 timetable  = [];
-visible    = false;
+visible    = true;
 
 quat   = rotm2quat(rot);
 vertex = [0, transl', quat];    % [id,tx,ty,tz,q1,q2,q3,q4]
@@ -50,158 +50,83 @@ t_all   = tic;
 it      = 1;
 edge_it = 1;
 e_id    = 0;
-for frame=1:step:(m/16)
+pc_num = 0;
+gr_num = 0;
+% for frame=1:step:(m/16)
+for frame=1:raw(1,end)
     t_iter = tic;
     iter = 50;
-    if frame~=m/16
-        while xd1(frame, 1)==0
-            frame = frame+1;
-        end
-    end
+    % if frame~=m/16
+    %     while xd1(frame, 1)==0
+    %         frame = frame+1;
+    %     end
+    % end
 
-    d1_a = deg1(frame,:);
-    d2_a = deg2(frame,:);
-    d3_a = deg3(frame,:);
-    d4_a = deg4(frame,:);
-    v1_a = val1(frame,:);
-    v2_a = val2(frame,:);
-    v3_a = val3(frame,:);
-    v4_a = val4(frame,:);
-    
+    pc = raw(:,raw(1,:)==frame);
+    azi = pc(3,:);
+    ele = pc(5,:);
+    r = pc(4,:);
+    [x,y,z] = sph2cart(azi,ele,r);
 
-    % Remove origins
-    d1_a = d1_a(d1_a ~= pi/2);
-    d2_a = d2_a(d2_a ~= pi/2);
-    d3_a = d3_a(d3_a ~= pi/2);
-    d4_a = d4_a(d4_a ~= pi/2);
-    v1_a = v1_a(d1_a ~= pi/2);
-    v2_a = v2_a(d2_a ~= pi/2);
-    v3_a = v3_a(d3_a ~= pi/2);
-    v4_a = v4_a(d4_a ~= pi/2);
+    filtered_pc = pc_filter(pc);
+    [filter_x,filter_y,filter_z] = sph2cart(filtered_pc(3,:),filtered_pc(5,:),filtered_pc(4,:));
+    pc_num = pc_num+size(filter_x,2);
 
-    [x1_a, y1_a, z1_a] = sph2cart(d1_a,ones(size(d1_a))*(-1.6)*pi/180,v1_a);
-    [x2_a, y2_a, z2_a] = sph2cart(d2_a,ones(size(d2_a))*(-0.8)*pi/180,v2_a);
-    [x3_a, y3_a, z3_a] = sph2cart(d3_a,ones(size(d3_a))*(0.8)*pi/180,v3_a); 
-    [x4_a, y4_a, z4_a] = sph2cart(d4_a,ones(size(d4_a))*(1.6)*pi/180,v4_a); 
-
-    % Nearest point of the same angle
-    [~,id1_u] = uniquetol(d1_a);
-    [~,id2_u] = uniquetol(d2_a);
-    [~,id3_u] = uniquetol(d3_a);
-    [~,id4_u] = uniquetol(d4_a);
-    D1_a = d1_a(1,id1_u);
-    D2_a = d2_a(1,id2_u);
-    D3_a = d3_a(1,id3_u);
-    D4_a = d4_a(1,id4_u);
-    V1_a = v1_a(1,id1_u);
-    V2_a = v2_a(1,id2_u);
-    V3_a = v3_a(1,id3_u);
-    V4_a = v4_a(1,id4_u);
-    [X1_a, Y1_a, Z1_a] = sph2cart(D1_a,ones(size(D1_a))*(-1.6)*pi/180,V1_a);
-    [X2_a, Y2_a, Z2_a] = sph2cart(D2_a,ones(size(D2_a))*(-0.8)*pi/180,V2_a);
-    [X3_a, Y3_a, Z3_a] = sph2cart(D3_a,ones(size(D3_a))*(0.8)*pi/180,V3_a); 
-    [X4_a, Y4_a, Z4_a] = sph2cart(D4_a,ones(size(D4_a))*(1.6)*pi/180,V4_a); 
-
-    % Excluded edge points
-    excluded_ptID1 = false(1,length(D1_a));
-    excluded_ptID2 = false(1,length(D2_a));
-    excluded_ptID3 = false(1,length(D3_a));
-    excluded_ptID4 = false(1,length(D4_a));
-    depthDiff1 = V1_a(1:end-1)-V1_a(2:end);
-    depthDiff2 = V2_a(1:end-1)-V2_a(2:end);
-    depthDiff3 = V3_a(1:end-1)-V3_a(2:end);
-    depthDiff4 = V4_a(1:end-1)-V4_a(2:end);
-    angleDiff1 = D1_a(1:end-1)-D1_a(2:end);
-    angleDiff2 = D2_a(1:end-1)-D2_a(2:end);
-    angleDiff3 = D3_a(1:end-1)-D3_a(2:end);
-    angleDiff4 = D4_a(1:end-1)-D4_a(2:end);
-    % Distance threshold
-        % Parameters
-        th_dist = 2;
-        th_angle = 2;   % Degree
-    excluded_ptID1(depthDiff1>th_dist) = true;
-    excluded_ptID2(depthDiff2>th_dist) = true;
-    excluded_ptID3(depthDiff3>th_dist) = true;
-    excluded_ptID4(depthDiff4>th_dist) = true;
-    excluded_ptID1([false depthDiff1<-th_dist]) = true;
-    excluded_ptID2([false depthDiff2<-th_dist]) = true;
-    excluded_ptID3([false depthDiff3<-th_dist]) = true;
-    excluded_ptID4([false depthDiff4<-th_dist]) = true;
-    % Angle threshold
-    excluded_ptID1(abs(angleDiff1)>deg2rad(th_angle)) = false;
-    excluded_ptID2(abs(angleDiff2)>deg2rad(th_angle)) = false;
-    excluded_ptID3(abs(angleDiff3)>deg2rad(th_angle)) = false;
-    excluded_ptID4(abs(angleDiff4)>deg2rad(th_angle)) = false;
-    excluded_ptID1([false abs(angleDiff1)>deg2rad(th_angle)]) = false;
-    excluded_ptID2([false abs(angleDiff2)>deg2rad(th_angle)]) = false;
-    excluded_ptID3([false abs(angleDiff3)>deg2rad(th_angle)]) = false;
-    excluded_ptID4([false abs(angleDiff4)>deg2rad(th_angle)]) = false;
-
-    X1_nooc = X1_a(~excluded_ptID1);
-    X2_nooc = X2_a(~excluded_ptID2);
-    X3_nooc = X3_a(~excluded_ptID3);
-    X4_nooc = X4_a(~excluded_ptID4);
-    Y1_nooc = Y1_a(~excluded_ptID1);
-    Y2_nooc = Y2_a(~excluded_ptID2);
-    Y3_nooc = Y3_a(~excluded_ptID3);
-    Y4_nooc = Y4_a(~excluded_ptID4);
-    Z1_nooc = Z1_a(~excluded_ptID1);
-    Z2_nooc = Z2_a(~excluded_ptID2);
-    Z3_nooc = Z3_a(~excluded_ptID3);
-    Z4_nooc = Z4_a(~excluded_ptID4);
-
-    % Calculate the curverture and find some edge points
-    l1 = [X1_nooc;Y1_nooc;Z1_nooc];
-    l2 = [X2_nooc;Y2_nooc;Z2_nooc];
-    l3 = [X3_nooc;Y3_nooc;Z3_nooc];
-    l4 = [X4_nooc;Y4_nooc;Z4_nooc];
-    diff_l1 = l1(:,4:end-3)*6-l1(:,3:end-4)-l1(:,2:end-5)-l1(:,1:end-6) ...
-                             -l1(:,5:end-2)-l1(:,6:end-1)-l1(:,7:end);
-    diff_l2 = l2(:,4:end-3)*6-l2(:,3:end-4)-l2(:,2:end-5)-l2(:,1:end-6) ...
-                             -l2(:,5:end-2)-l2(:,6:end-1)-l2(:,7:end);
-    diff_l3 = l3(:,4:end-3)*6-l3(:,3:end-4)-l3(:,2:end-5)-l3(:,1:end-6) ...
-                             -l3(:,5:end-2)-l3(:,6:end-1)-l3(:,7:end);
-    diff_l4 = l4(:,4:end-3)*6-l4(:,3:end-4)-l4(:,2:end-5)-l4(:,1:end-6) ...
-                             -l4(:,5:end-2)-l4(:,6:end-1)-l4(:,7:end);
-    c1 = sum(diff_l1.^2,1);
-    c2 = sum(diff_l2.^2,1);
-    c3 = sum(diff_l3.^2,1);
-    c4 = sum(diff_l4.^2,1);
-    [~,id_sort1] = sort(c1);
-    [~,id_sort2] = sort(c2);
-    [~,id_sort3] = sort(c3);
-    [~,id_sort4] = sort(c4);
-    id_sort1 = id_sort1+3;
-    id_sort2 = id_sort2+3;
-    id_sort3 = id_sort3+3;
-    id_sort4 = id_sort4+3;
-    id_choose1 = [id_sort1(1:floor(length(id_sort1)/3)) id_sort1(ceil(length(id_sort1)*2/3):end)];
-    id_choose2 = [id_sort2(1:floor(length(id_sort2)/3)) id_sort2(ceil(length(id_sort2)*2/3):end)];
-    id_choose3 = [id_sort3(1:floor(length(id_sort3)/3)) id_sort3(ceil(length(id_sort3)*2/3):end)];
-    id_choose4 = [id_sort4(1:floor(length(id_sort4)/3)) id_sort4(ceil(length(id_sort4)*2/3):end)];
-    X1_nooc = X1_nooc(id_choose1);
-    Y1_nooc = Y1_nooc(id_choose1);
-    Z1_nooc = Z1_nooc(id_choose1);
-    X2_nooc = X2_nooc(id_choose2);
-    Y2_nooc = Y2_nooc(id_choose2);
-    Z2_nooc = Z2_nooc(id_choose2);
-    X3_nooc = X3_nooc(id_choose3);
-    Y3_nooc = Y3_nooc(id_choose3);
-    Z3_nooc = Z3_nooc(id_choose3);
-    X4_nooc = X4_nooc(id_choose4);
-    Y4_nooc = Y4_nooc(id_choose4);
-    Z4_nooc = Z4_nooc(id_choose4);
+    % % Calculate the curverture and find some edge points
+    % l1 = [X1_nooc;Y1_nooc;Z1_nooc];
+    % l2 = [X2_nooc;Y2_nooc;Z2_nooc];
+    % l3 = [X3_nooc;Y3_nooc;Z3_nooc];
+    % l4 = [X4_nooc;Y4_nooc;Z4_nooc];
+    % diff_l1 = l1(:,4:end-3)*6-l1(:,3:end-4)-l1(:,2:end-5)-l1(:,1:end-6) ...
+    %                          -l1(:,5:end-2)-l1(:,6:end-1)-l1(:,7:end);
+    % diff_l2 = l2(:,4:end-3)*6-l2(:,3:end-4)-l2(:,2:end-5)-l2(:,1:end-6) ...
+    %                          -l2(:,5:end-2)-l2(:,6:end-1)-l2(:,7:end);
+    % diff_l3 = l3(:,4:end-3)*6-l3(:,3:end-4)-l3(:,2:end-5)-l3(:,1:end-6) ...
+    %                          -l3(:,5:end-2)-l3(:,6:end-1)-l3(:,7:end);
+    % diff_l4 = l4(:,4:end-3)*6-l4(:,3:end-4)-l4(:,2:end-5)-l4(:,1:end-6) ...
+    %                          -l4(:,5:end-2)-l4(:,6:end-1)-l4(:,7:end);
+    % c1 = sum(diff_l1.^2,1);
+    % c2 = sum(diff_l2.^2,1);
+    % c3 = sum(diff_l3.^2,1);
+    % c4 = sum(diff_l4.^2,1);
+    % [~,id_sort1] = sort(c1);
+    % [~,id_sort2] = sort(c2);
+    % [~,id_sort3] = sort(c3);
+    % [~,id_sort4] = sort(c4);
+    % id_sort1 = id_sort1+3;
+    % id_sort2 = id_sort2+3;
+    % id_sort3 = id_sort3+3;
+    % id_sort4 = id_sort4+3;
+    % id_choose1 = [id_sort1(1:floor(length(id_sort1)/3)) id_sort1(ceil(length(id_sort1)*2/3):end)];
+    % id_choose2 = [id_sort2(1:floor(length(id_sort2)/3)) id_sort2(ceil(length(id_sort2)*2/3):end)];
+    % id_choose3 = [id_sort3(1:floor(length(id_sort3)/3)) id_sort3(ceil(length(id_sort3)*2/3):end)];
+    % id_choose4 = [id_sort4(1:floor(length(id_sort4)/3)) id_sort4(ceil(length(id_sort4)*2/3):end)];
+    % X1_nooc = X1_nooc(id_choose1);
+    % Y1_nooc = Y1_nooc(id_choose1);
+    % Z1_nooc = Z1_nooc(id_choose1);
+    % X2_nooc = X2_nooc(id_choose2);
+    % Y2_nooc = Y2_nooc(id_choose2);
+    % Z2_nooc = Z2_nooc(id_choose2);
+    % X3_nooc = X3_nooc(id_choose3);
+    % Y3_nooc = Y3_nooc(id_choose3);
+    % Z3_nooc = Z3_nooc(id_choose3);
+    % X4_nooc = X4_nooc(id_choose4);
+    % Y4_nooc = Y4_nooc(id_choose4);
+    % Z4_nooc = Z4_nooc(id_choose4);
 
     % ICP
     % P_src = [x1_a,x2_a,x3_a,x4_a;y1_a,y2_a,y3_a,y4_a;z1_a,z2_a,z3_a,z4_a];
-    P_src = [X1_nooc,X2_nooc,X3_nooc,X4_nooc;Y1_nooc,Y2_nooc,Y3_nooc,Y4_nooc; ...
-             Z1_nooc,Z2_nooc,Z3_nooc,Z4_nooc];
+    P_src = [x;y;z];
+    % P_src = [X1_nooc,X2_nooc,X3_nooc,X4_nooc;Y1_nooc,Y2_nooc,Y3_nooc,Y4_nooc; ...
+    %          Z1_nooc,Z2_nooc,Z3_nooc,Z4_nooc];
     P_src_w = P_src;
 
     if frame ~= 1
         initRot   = rot;
         initPos   = transl;
-        P_src_tmp = P_src;
+        % P_src_tmp = P_src;
+        % P_src_tmp = P_src(:,~ground_id);
+        P_src_tmp = [filter_x;filter_y;filter_z];
         % Initial condition
 
         wcdist = sum((wallcloud-transl).^2,1).^0.5;
@@ -263,7 +188,9 @@ for frame=1:step:(m/16)
     else
         initRot = rot;
         initPos = transl;
-        wallcloud = rot*P_src+transl;
+        % wallcloud = rot*P_src+transl;
+        % wallcloud = rot*P_src(:,~ground_id)+transl;
+        wallcloud = rot*[filter_x;filter_y;filter_z]+transl;
         wallcloud = round(wallcloud*10)/10;
         figure(1)
         wc=scatter3(wallcloud(1,:),wallcloud(2,:),wallcloud(3,:),3,linspace(1,10,size(wallcloud,2)),'filled');
@@ -338,17 +265,17 @@ for frame=1:step:(m/16)
     if visible
         figure(1)
         % Angle of view
-        maxDist = max(max(v1_a),max(v2_a));
-        oriAng = rotm2eul(rot);
-        oriAng = oriAng(1);
-        maxAng = max(max(d1_a),max(d2_a))+oriAng-pi/18;  % Radian
-        minAng = min(min(d1_a),min(d2_a))+oriAng+pi/18;  % Radian
-        [maskx,masky]=pol2cart([maxAng minAng],[maxDist maxDist]);
+        % maxDist = max(max(v1_a),max(v2_a));
+        % oriAng = rotm2eul(rot);
+        % oriAng = oriAng(1);
+        % maxAng = max(max(d1_a),max(d2_a))+oriAng-pi/18;  % Radian
+        % minAng = min(min(d1_a),min(d2_a))+oriAng+pi/18;  % Radian
+        % [maskx,masky]=pol2cart([maxAng minAng],[maxDist maxDist]);
 
         wall=scatter3(P_src(1,:),P_src(2,:),P_src(3,:),3,'r','filled');
         % Angle of view
-        line1 = line([transl(1) transl(1)+maskx(1)], [transl(2) transl(2)+masky(1)]);
-        line2 = line([transl(1) transl(1)+maskx(2)], [transl(2) transl(2)+masky(2)]);
+        % line1 = line([transl(1) transl(1)+maskx(1)], [transl(2) transl(2)+masky(1)]);
+        % line2 = line([transl(1) transl(1)+maskx(2)], [transl(2) transl(2)+masky(2)]);
 
 
         % axis equal
@@ -374,11 +301,14 @@ for frame=1:step:(m/16)
 
     if visible
         delete(wall)
-        delete(line1)
-        delete(line2)
+        % delete(line1)
+        % delete(line2)
     end
 
 end
+
+pc_avg = pc_num/raw(1,end)
+gr_avg = gr_num/raw(1,end)
 
 % Simple loop closure
 edges(edge_it,:) = [e_id, 0, [0 0 0], [1 0 0 0]];
